@@ -13,6 +13,9 @@ namespace
 
     Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
     bool displayReady = false;
+    bool showingTeaReady = false;
+    unsigned long teaReadyShownAt = 0;
+    constexpr unsigned long TEA_READY_DURATION = 3000;
 
     const unsigned char teaIconFrame1[] PROGMEM = {
         0x0a, 0x00, 0x05, 0x00, 0x0a, 0x00, 0x00, 0x00,
@@ -35,9 +38,49 @@ bool initDisplay()
         return false;
 
     displayReady = true;
-    display.clearDisplay();
-    display.display();
+    displayIdleScreen();
     return true;
+}
+
+void displayIdleScreen()
+{
+    if (!displayReady)
+        return;
+
+    showingTeaReady = false;
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.setCursor((SCREEN_WIDTH - 108) / 2, 18);
+    display.print(F("Tea Mixer"));
+
+    display.setTextSize(1);
+    display.setCursor((SCREEN_WIDTH - 30) / 2, 44);
+    display.print(F("Ready"));
+    display.display();
+}
+
+void displayTeaReady()
+{
+    if (!displayReady)
+        return;
+
+    showingTeaReady = true;
+    teaReadyShownAt = millis();
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.setCursor((SCREEN_WIDTH - 72) / 2, 14);
+    display.print(F("Tea is"));
+    display.setCursor((SCREEN_WIDTH - 60) / 2, 39);
+    display.print(F("Ready"));
+    display.display();
+}
+
+void updateDisplay()
+{
+    if (showingTeaReady && millis() - teaReadyShownAt >= TEA_READY_DURATION)
+        displayIdleScreen();
 }
 
 void displayTeaProgress(uint8_t progress)
@@ -45,6 +88,7 @@ void displayTeaProgress(uint8_t progress)
     if (!displayReady)
         return;
 
+    showingTeaReady = false;
     progress = constrain(progress, 0, 100);
     display.clearDisplay();
 

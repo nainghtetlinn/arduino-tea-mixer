@@ -83,6 +83,7 @@ void updateTeaProgress()
     else
     {
         isMaking = false;
+        displayTeaReady();
         sendTeaFinishedJSON();
         return;
     }

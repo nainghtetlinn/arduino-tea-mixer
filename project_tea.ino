@@ -17,6 +17,7 @@ void loop()
 {
     updateButtons();
     updateTeaProgress();
+    updateDisplay();
 
     // Keep delay small so buttons respond quickly
     delay(20);
