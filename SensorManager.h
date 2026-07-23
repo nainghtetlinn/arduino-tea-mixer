@@ -1,11 +1,42 @@
 #ifndef SENSOR_MANAGER_H
 #define SENSOR_MANAGER_H
 
-void initSensors();
-void updateSensors();
-float getTemperature();
-float getWeight();
-bool isSensorDataNew();
-void clearSensorDataNewFlag();
+#include <Arduino.h>
+#include <HX711.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+class SensorManager
+{
+public:
+    SensorManager();
+    void begin();
+    void update();
+
+    float getTemperature() const;
+    float getWeight() const;
+
+    bool isDataNew() const;
+    void clearDataNew();
+
+    // --- Calibration API ---
+    void startCalibrationZero();
+    bool finishCalibrationWeight(float knownWeightGrams);
+    float getCalibrationFactor() const;
+
+private:
+    OneWire oneWire;
+    DallasTemperature sensors;
+    HX711 scale;
+
+    unsigned long lastSensorUpdate;
+    float currentTemperature;
+    float currentWeight;
+    float activeCalibrationFactor;
+    bool newDataAvailable;
+
+    void loadSavedCalibrationFactor();
+    void saveCalibrationFactor(float newFactor);
+};
 
 #endif

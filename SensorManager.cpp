@@ -1,54 +1,117 @@
 #include "SensorManager.h"
-#include <Arduino.h>
+#include "Config.h"
+#include <Preferences.h>
+#include <cmath>
 
-static float currentTemperature = 25.0f;
-static float currentWeight = 0.0f;
-static bool newDataAvailable = false;
-static unsigned long lastSensorUpdate = 0;
+SensorManager::SensorManager()
+    : oneWire(PIN_ONE_WIRE),
+      sensors(&oneWire),
+      lastSensorUpdate(0),
+      currentTemperature(0.0f),
+      currentWeight(0.0f),
+      activeCalibrationFactor(DEFAULT_CALIBRATION_FACTOR),
+      newDataAvailable(false)
+{}
 
-#define SENSOR_UPDATE_INTERVAL 2000
-
-void initSensors()
+void SensorManager::begin()
 {
-    // Initialize actual I2C, OneWire, HX711 etc here
-    // e.g. sensors.begin();
-    // scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+    loadSavedCalibrationFactor();
+
+    sensors.begin();
+
+    scale.begin(PIN_HX711_DT, PIN_HX711_CLK);
+    scale.set_scale(activeCalibrationFactor);
+    scale.tare();
+
+    DEBUG_PRINT(F("[SensorManager] Initialized with calibration factor: "));
+    DEBUG_PRINTLN(activeCalibrationFactor);
 }
 
-void updateSensors()
+void SensorManager::update()
 {
-    if (millis() - lastSensorUpdate > SENSOR_UPDATE_INTERVAL)
-    {
-        lastSensorUpdate = millis();
+    unsigned long currentMillis = millis();
 
-        // TODO: Read actual values here
-        // currentTemperature = sensors.getTempCByIndex(0);
-        // currentWeight = scale.get_units();
-        
-        // Mock data for variation
-        currentTemperature += random(-10, 11) / 10.0f;
-        currentWeight += random(-5, 6) / 10.0f;
+    if (currentMillis - lastSensorUpdate >= SENSOR_UPDATE_INTERVAL_MS)
+    {
+        lastSensorUpdate = currentMillis;
+
+        sensors.requestTemperatures();
+        currentTemperature = sensors.getTempCByIndex(0);
+
+        currentWeight = scale.get_units();
 
         newDataAvailable = true;
     }
 }
 
-float getTemperature()
+void SensorManager::startCalibrationZero()
+{
+    scale.tare(10);
+    DEBUG_PRINTLN(F("[SensorManager] Zero tare completed."));
+}
+
+bool SensorManager::finishCalibrationWeight(float knownWeightGrams)
+{
+    if (knownWeightGrams <= 0.0f)
+    {
+        DEBUG_PRINTLN(F("[SensorManager] Error: Known weight must be > 0"));
+        return false;
+    }
+
+    float rawUnits = scale.get_value(10);
+    float newFactor = rawUnits / knownWeightGrams;
+
+    scale.set_scale(newFactor);
+    saveCalibrationFactor(newFactor);
+
+    DEBUG_PRINTF("[SensorManager] Calibrated successfully. New factor: %.2f\n", newFactor);
+    return true;
+}
+
+float SensorManager::getCalibrationFactor() const
+{
+    return activeCalibrationFactor;
+}
+
+float SensorManager::getTemperature() const
 {
     return currentTemperature;
 }
 
-float getWeight()
+float SensorManager::getWeight() const
 {
     return currentWeight;
 }
 
-bool isSensorDataNew()
+bool SensorManager::isDataNew() const
 {
     return newDataAvailable;
 }
 
-void clearSensorDataNewFlag()
+void SensorManager::clearDataNew()
 {
     newDataAvailable = false;
+}
+
+void SensorManager::loadSavedCalibrationFactor()
+{
+    Preferences prefs;
+    prefs.begin(PREFS_NAMESPACE, true);
+    activeCalibrationFactor = prefs.getFloat(PREFS_KEY_CAL_FACTOR, DEFAULT_CALIBRATION_FACTOR);
+    prefs.end();
+
+    if (std::isnan(activeCalibrationFactor) || activeCalibrationFactor <= 0.0f)
+    {
+        activeCalibrationFactor = DEFAULT_CALIBRATION_FACTOR;
+    }
+}
+
+void SensorManager::saveCalibrationFactor(float newFactor)
+{
+    activeCalibrationFactor = newFactor;
+
+    Preferences prefs;
+    prefs.begin(PREFS_NAMESPACE, false);
+    prefs.putFloat(PREFS_KEY_CAL_FACTOR, newFactor);
+    prefs.end();
 }

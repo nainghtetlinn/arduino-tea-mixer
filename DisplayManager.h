@@ -2,20 +2,20 @@
 #define DISPLAY_MANAGER_H
 
 #include <Arduino.h>
+#include <Adafruit_SSD1306.h>
 
-// Initializes the SSD1306 OLED display. Returns false if it is unavailable.
-bool initDisplay();
+class DisplayManager
+{
+public:
+    DisplayManager();
+    bool begin();
+    void showIdle(float temperature = 0.0f, float weight = 0.0f);
+    void showReady();
+    void showProgress(uint8_t progress);
 
-// Draws the screen shown when no tea is being made.
-void displayIdleScreen();
-
-// Shows the completed-tea message for three seconds.
-void displayTeaReady();
-
-// Updates time-based display states. Call this regularly from loop().
-void updateDisplay();
-
-// Draws the animated tea icon and brewing progress (0-100 percent).
-void displayTeaProgress(uint8_t progress);
+private:
+    Adafruit_SSD1306 display;
+    bool displayReady;
+};
 
 #endif
