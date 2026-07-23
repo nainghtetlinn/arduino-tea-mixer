@@ -16,7 +16,6 @@ namespace
     // --- Layout Constants ---
     constexpr uint8_t ICON_WIDTH = 24;
     constexpr uint8_t ICON_HEIGHT = 24;
-    constexpr unsigned long ANIMATION_SPEED_MS = 200;
 
     // --- Animated Steam Bitmaps ---
     const unsigned char teaIconFrame1[] PROGMEM = {

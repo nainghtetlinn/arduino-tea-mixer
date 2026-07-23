@@ -64,6 +64,7 @@ void TeaManager::update()
             {
                 currentState = TeaState::FINISHED;
                 currentProgress = 100;
+                lastFinished = currentMillis;
 
                 sendTeaFinishedJSON();
                 return;

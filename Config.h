@@ -45,6 +45,9 @@ constexpr uint8_t PIN_BTN_3 = 25;
 constexpr unsigned long SENSOR_UPDATE_INTERVAL_MS = 500;
 constexpr float DEFAULT_CALIBRATION_FACTOR = 886.47f;
 
+// --- Display Settings ---
+constexpr unsigned long ANIMATION_SPEED_MS = 300;
+
 // --- Tea Settings ---
 constexpr unsigned long TEA_UPDATE_INTERVAL_MS = 200;
 constexpr unsigned long TEA_FINISHED_INTERVAL_MS = 2000;
