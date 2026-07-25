@@ -1,8 +1,12 @@
 #include "BluetoothManager.h"
 #include "Config.h"
 
-#define SERVICE_UUID "3b0947a7-1654-4b40-8f26-8a21169e054b"
-#define CHARACTERISTIC_UUID "ede453c3-a6f3-42b4-9077-77dc68fd2f73"
+namespace
+{
+    constexpr char DEVICE_NAME[] = "TeaMixer";
+    constexpr char SERVICE_UUID[] = "3b0947a7-1654-4b40-8f26-8a21169e054b";
+    constexpr char CHARACTERISTIC_UUID[] = "ede453c3-a6f3-42b4-9077-77dc68fd2f73";
+} // anonymous namespace
 
 class ServerCallbacks : public BLEServerCallbacks
 {
@@ -62,7 +66,7 @@ void BluetoothManager::begin(OnWriteCallback onWriteCb)
 {
     bleOnWriteCb = onWriteCb;
 
-    BLEDevice::init("TeaMixer");
+    BLEDevice::init(DEVICE_NAME);
     BLEDevice::setMTU(512);
 
     pServer = BLEDevice::createServer();
@@ -101,7 +105,7 @@ void BluetoothManager::sendJSON(const String &type, const JsonDocument &payload)
     pCharacteristic->setValue(output.c_str());
     pCharacteristic->notify();
 
-    DEBUG_PRINTLN("NOTIFY: " + type);
+    DEBUG_PRINTLN("[BluetoothManager] NOTIFY: " + type);
 }
 
 void BluetoothManager::sendError(const String &errorCode, const String &errorMessage)
@@ -121,7 +125,7 @@ void BluetoothManager::sendError(const String &errorCode, const String &errorMes
     pCharacteristic->setValue(output.c_str());
     pCharacteristic->notify();
 
-    DEBUG_PRINTLN("NOTIFY: " + errorCode);
+    DEBUG_PRINTLN("[BluetoothManager] NOTIFY: " + errorCode);
 }
 
 bool BluetoothManager::isConnected() const

@@ -1,6 +1,12 @@
 #include "TeaManager.h"
 #include "Config.h"
 
+namespace
+{
+    constexpr unsigned long TEA_FINISHED_INTERVAL_MS = 2000;
+    constexpr unsigned long TEA_UPDATE_INTERVAL_MS = 500;
+} // anonymous namespace
+
 TeaManager::TeaManager()
     : target({0, 0, 0, 0}),
       current({0, 0, 0, 0}),

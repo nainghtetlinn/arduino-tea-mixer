@@ -3,15 +3,34 @@
 #include <Preferences.h>
 #include <cmath>
 
+namespace
+{
+    // --- Pins ---
+    constexpr uint8_t PIN_HX711_DT = 14;
+    constexpr uint8_t PIN_HX711_CLK = 13;
+    constexpr uint8_t PIN_ONE_WIRE = 4;
+
+    // Parameters
+    constexpr unsigned long SENSOR_UPDATE_INTERVAL_MS = 500;
+
+    // Default
+    constexpr float DEFAULT_CALIBRATION_FACTOR = 886.47f;
+
+    // NVS
+    constexpr char PREFS_NAMESPACE[] = "sensors";
+    constexpr char PREFS_KEY_CAL_FACTOR[] = "cal_factor";
+} // anonymous namespace
+
 SensorManager::SensorManager()
     : oneWire(PIN_ONE_WIRE),
       sensors(&oneWire),
       lastSensorUpdate(0),
       currentTemperature(0.0f),
       currentWeight(0.0f),
-      activeCalibrationFactor(DEFAULT_CALIBRATION_FACTOR),
-      newDataAvailable(false)
-{}
+      newDataAvailable(false),
+      activeCalibrationFactor(DEFAULT_CALIBRATION_FACTOR)
+{
+}
 
 void SensorManager::begin()
 {

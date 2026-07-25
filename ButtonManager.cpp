@@ -7,6 +7,14 @@ namespace
     // --- Constants ---
     constexpr uint8_t NUM_BUTTONS = 3;
 
+    // --- Pins ---
+    constexpr uint8_t PIN_BTN_1 = 27;
+    constexpr uint8_t PIN_BTN_2 = 26;
+    constexpr uint8_t PIN_BTN_3 = 25;
+
+    // NVS
+    constexpr char PREFS_NAMESPACE_TEA[] = "tea_settings";
+
     // Default recipes in case none are saved in NVS
     const char *defaultNames[NUM_BUTTONS] = {
         "Pon Hman",
@@ -21,18 +29,16 @@ namespace
 } // anonymous namespace
 
 ButtonManager::ButtonManager()
-    : btnPressCb(nullptr),
-      btnSendJsonCb(nullptr)
+    : btnPressCb(nullptr)
 {
     buttons[0] = OneButton(PIN_BTN_1, true, false);
     buttons[1] = OneButton(PIN_BTN_2, true, false);
     buttons[2] = OneButton(PIN_BTN_3, true, false);
 }
 
-void ButtonManager::begin(ButtonPressCallback pressCb, ButtonSendJsonCallback sendCb)
+void ButtonManager::begin(ButtonPressCallback pressCb)
 {
     btnPressCb = pressCb;
-    btnSendJsonCb = sendCb;
 
     buttons[0]
         .attachClick(
@@ -65,44 +71,43 @@ void ButtonManager::update()
     }
 }
 
-void ButtonManager::handleGetButtonsInfoCommand()
+void ButtonManager::setButtonInfo(int index, ButtonInfo info)
 {
-    DEBUG_PRINTLN(F("[ButtonManager] Handle: GET_BUTTONS_INFO"));
-    sendButtonsInfoJSON();
-}
-
-void ButtonManager::handleSetButtonInfoCommand(const JsonDocument &doc)
-{
-    DEBUG_PRINTLN(F("[ButtonManager] Handle: SET_BUTTON_INFO"));
-
-    JsonObjectConst payload = doc["payload"];
-    if (payload.isNull())
+    if (index < 0)
     {
-        DEBUG_PRINTLN(F("[ButtonManager] Error: Invalid JSON payload"));
+        DEBUG_PRINTF("[ButtonManager] invalid index %d.\n", index);
         return;
     }
+    char key[16];
 
-    int id = payload["id"] | -1;
-    if (id < 0 || id >= NUM_BUTTONS)
-    {
-        DEBUG_PRINTF("[ButtonManager] Error: Invalid button ID %d\n", id);
-        return;
-    }
+    Preferences prefs;
+    prefs.begin(PREFS_NAMESPACE_TEA, false);
 
-    ButtonInfo info;
-    info.name = payload["name"] | defaultNames[id];
-    info.recipe.tea = payload["tea"] | 0;
-    info.recipe.condensedMilk = payload["condensedMilk"] | 0;
-    info.recipe.evaporatedMilk = payload["evaporatedMilk"] | 0;
-    info.recipe.milk = payload["milk"] | 0;
+    makeNvsKey(key, sizeof(key), index, "name");
+    prefs.putString(key, info.name);
 
-    setButtonInfo(id, info);
-    sendButtonsInfoJSON();
-}
+    makeNvsKey(key, sizeof(key), index, "tea");
+    prefs.putInt(key, info.recipe.tea);
 
-void ButtonManager::makeNvsKey(char *buffer, size_t bufferSize, int index, const char *field)
-{
-    snprintf(buffer, bufferSize, "b%d_%s", index, field);
+    makeNvsKey(key, sizeof(key), index, "cond");
+    prefs.putInt(key, info.recipe.condensedMilk);
+
+    makeNvsKey(key, sizeof(key), index, "evap");
+    prefs.putInt(key, info.recipe.evaporatedMilk);
+
+    makeNvsKey(key, sizeof(key), index, "milk");
+    prefs.putInt(key, info.recipe.milk);
+
+    prefs.end();
+
+    DEBUG_PRINTF(
+        "[ButtonManager] Button %d recipe updated (name=%s, tea=%d, cond=%d, evap=%d, milk=%d).\n",
+        index + 1,
+        info.name.c_str(),
+        info.recipe.tea,
+        info.recipe.condensedMilk,
+        info.recipe.evaporatedMilk,
+        info.recipe.milk);
 }
 
 ButtonInfo ButtonManager::getButtonInfo(int index)
@@ -130,56 +135,19 @@ ButtonInfo ButtonManager::getButtonInfo(int index)
 
     prefs.end();
 
-    return info;
-}
-
-void ButtonManager::setButtonInfo(int index, ButtonInfo info)
-{
-    char key[16];
-
-    Preferences prefs;
-    prefs.begin(PREFS_NAMESPACE_TEA, false);
-
-    makeNvsKey(key, sizeof(key), index, "name");
-    prefs.putString(key, info.name);
-
-    makeNvsKey(key, sizeof(key), index, "tea");
-    prefs.putInt(key, info.recipe.tea);
-
-    makeNvsKey(key, sizeof(key), index, "cond");
-    prefs.putInt(key, info.recipe.condensedMilk);
-
-    makeNvsKey(key, sizeof(key), index, "evap");
-    prefs.putInt(key, info.recipe.evaporatedMilk);
-
-    makeNvsKey(key, sizeof(key), index, "milk");
-    prefs.putInt(key, info.recipe.milk);
-
-    prefs.end();
-
-    DEBUG_PRINTF("[ButtonManager] Button %d recipe updated & saved.\n", index + 1);
-}
-
-void ButtonManager::handleButtonClick(int btnIndex)
-{
-    ButtonInfo info = getButtonInfo(btnIndex);
-
     DEBUG_PRINTF(
-        "[ButtonManager] Button %d pressed: name=%s, tea=%d, cond=%d, evap=%d, milk=%d\n",
-        btnIndex + 1,
+        "[ButtonManager] Button %d recipe (name=%s, tea=%d, cond=%d, evap=%d, milk=%d).\n",
+        index + 1,
         info.name.c_str(),
         info.recipe.tea,
         info.recipe.condensedMilk,
         info.recipe.evaporatedMilk,
         info.recipe.milk);
 
-    if (btnPressCb)
-    {
-        btnPressCb(info.recipe);
-    }
+    return info;
 }
 
-void ButtonManager::sendButtonsInfoJSON()
+JsonDocument ButtonManager::getButtonsInfoJSON()
 {
     JsonDocument doc;
 
@@ -196,8 +164,20 @@ void ButtonManager::sendButtonsInfoJSON()
         doc[btnKey] = obj;
     }
 
-    if (btnSendJsonCb)
+    return doc;
+}
+
+void ButtonManager::makeNvsKey(char *buffer, size_t bufferSize, int index, const char *field)
+{
+    snprintf(buffer, bufferSize, "b%d_%s", index, field);
+}
+
+void ButtonManager::handleButtonClick(int index)
+{
+    DEBUG_PRINTF("[ButtonManager] Button %d clicked.\n", index + 1);
+
+    if (btnPressCb)
     {
-        btnSendJsonCb("BUTTONS_INFO", doc);
+        btnPressCb(index);
     }
 }

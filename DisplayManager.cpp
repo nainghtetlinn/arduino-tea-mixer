@@ -7,6 +7,10 @@
 
 namespace
 {
+    // --- Pins ---
+    constexpr uint8_t PIN_I2C_SDA = 21;
+    constexpr uint8_t PIN_I2C_SCL = 22;
+
     // --- Display Configuration ---
     constexpr uint8_t SCREEN_WIDTH = 128;
     constexpr uint8_t SCREEN_HEIGHT = 64;
@@ -16,6 +20,9 @@ namespace
     // --- Layout Constants ---
     constexpr uint8_t ICON_WIDTH = 24;
     constexpr uint8_t ICON_HEIGHT = 24;
+
+    // --- Animation ---
+    constexpr unsigned long ANIMATION_SPEED_MS = 500;
 
     // --- Animated Steam Bitmaps ---
     const unsigned char teaIconFrame1[] PROGMEM = {
@@ -46,7 +53,7 @@ namespace
 
     const unsigned char teaIconFrame2[] PROGMEM = {
         0x04, 0x10, 0x40, //     #     #     #
-        0x08, 0x20, 0x80, //    #     #     #
+        0x08, 0x20, 0x80, //     #     #     #
         0x08, 0x20, 0x80, //    #     #     #
         0x10, 0x41, 0x00, //   #     #     #
         0x20, 0x82, 0x00, //  #     #     #
@@ -100,7 +107,6 @@ void DisplayManager::showIdle(float temperature, float weight)
         return;
 
     display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
 
     // 1. Header Bar
     display.setTextSize(1);
@@ -202,7 +208,6 @@ void DisplayManager::showProgress(uint8_t progress)
 
     // 4. Draw percentage text centered below progress bar
     display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
 
     // Dynamic width calculation: "Brewing... " (11) + progress digits (1-3) + "%" (1)
     const uint8_t charCount = 12 + (progress >= 100 ? 3 : (progress >= 10 ? 2 : 1));
