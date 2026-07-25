@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "DisplayManager.h"
 #include "SensorManager.h"
+#include "RelayManager.h"
 #include "TeaManager.h"
 #include "Models.h"
 
@@ -11,6 +12,7 @@ DisplayManager displayManager;
 SensorManager sensorManager;
 BluetoothManager bluetoothManager;
 ButtonManager buttonManager;
+RelayManager relayManager;
 TeaManager teaManager;
 
 void setup()
@@ -18,28 +20,66 @@ void setup()
     Serial.begin(115200);
     delay(1000);
 
-    // Wire managers together (Mediator Pattern)
     bluetoothManager.begin(
         [](const JsonDocument &doc)
         {
             String type = doc["type"].as<String>();
+            DEBUG_PRINTLN("[BluetoothManager] Handle: " + type);
+
             if (type == "MAKE_TEA")
             {
-                teaManager.handleMakeTeaCommand(doc);
+                JsonObjectConst payload = doc["payload"];
+                TeaRecipe recipe;
+                recipe.fromJson(payload);
+                teaManager.startMakingTea(recipe);
             }
             else if (type == "GET_BUTTONS_INFO")
             {
-                buttonManager.handleGetButtonsInfoCommand();
+                bluetoothManager.sendJSON("BUTTONS_INFO", buttonManager.getButtonsInfoJSON());
             }
             else if (type == "SET_BUTTON_INFO")
             {
-                buttonManager.handleSetButtonInfoCommand(doc);
+                JsonObjectConst payload = doc["payload"];
+                int id = payload["id"] | -1;
+                ButtonInfo info;
+                info.fromJson(payload);
+                buttonManager.setButtonInfo(id, info);
+                bluetoothManager.sendJSON("BUTTONS_INFO", buttonManager.getButtonsInfoJSON());
             }
             else
-                DEBUG_PRINTLN("Unknown Type");
+                DEBUG_PRINTLN(F("Unknown Type"));
         });
 
+    buttonManager.begin(
+        [](const int &btnIndex)
+        {
+            TeaState state = teaManager.getState();
+
+            if (state == TeaState::IDLE)
+            {
+                // First press: show recipe preview
+                ButtonInfo info = buttonManager.getButtonInfo(btnIndex);
+                teaManager.previewRecipe(info);
+            }
+            else if (state == TeaState::PREVIEW)
+            {
+                // Second press while previewing: confirm and start brewing
+                teaManager.confirmBrew();
+            }
+        });
+
+    displayManager.begin();
+
+    sensorManager.begin();
+
+    relayManager.begin();
+
+    // Initialize TeaManager with RelayManager, SensorManager, and callbacks
     teaManager.begin(
+        &relayManager,
+        &sensorManager,
+        &displayManager,
+        &buttonManager,
         [](const String &type, const JsonDocument &data)
         {
             bluetoothManager.sendJSON(type, data);
@@ -49,19 +89,6 @@ void setup()
             bluetoothManager.sendError(errorCode, errorMessage);
         });
 
-    buttonManager.begin(
-        [](const TeaRecipe &recipe)
-        {
-            teaManager.startMakingTea(recipe);
-        },
-        [](const String &type, const JsonDocument &data)
-        {
-            bluetoothManager.sendJSON(type, data);
-        });
-
-    displayManager.begin();
-    sensorManager.begin();
-
     DEBUG_PRINTLN("Tea Mixer Ready");
 }
 
@@ -70,21 +97,6 @@ void loop()
     buttonManager.update();
     sensorManager.update();
     teaManager.update();
-
-    TeaState state = teaManager.getState();
-
-    if (state == TeaState::IDLE)
-    {
-        displayManager.showIdle(sensorManager.getTemperature(), sensorManager.getWeight());
-    }
-    else if (state == TeaState::FINISHED)
-    {
-        displayManager.showReady();
-    }
-    else if (state == TeaState::MAKING)
-    {
-        displayManager.showProgress(teaManager.getProgress());
-    }
 
     // Keep delay small so buttons respond quickly
     delay(20);

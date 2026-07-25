@@ -16,6 +16,7 @@ public:
     void setButtonInfo(int index, ButtonInfo info);
     ButtonInfo getButtonInfo(int index);
     JsonDocument getButtonsInfoJSON();
+    String getButtonName(int index);
 
 private:
     OneButton buttons[3];

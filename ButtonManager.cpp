@@ -181,3 +181,14 @@ void ButtonManager::handleButtonClick(int index)
         btnPressCb(index);
     }
 }
+
+String ButtonManager::getButtonName(int index)
+{
+    char key[16];
+    Preferences prefs;
+    prefs.begin("tea_settings", true);
+    makeNvsKey(key, sizeof(key), index, "name");
+    String name = prefs.getString(key, defaultNames[index]);
+    prefs.end();
+    return name;
+}

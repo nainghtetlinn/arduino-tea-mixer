@@ -7,9 +7,19 @@
 enum class TeaState : uint8_t
 {
     IDLE,
+    PREVIEW,
     MAKING,
     FINISHED,
     ERROR
+};
+
+enum class DispensingPhase : uint8_t
+{
+    TEA,
+    CONDENSED_MILK,
+    EVAPORATED_MILK,
+    MILK,
+    DONE
 };
 
 struct TeaRecipe

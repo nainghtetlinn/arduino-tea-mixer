@@ -76,6 +76,18 @@ namespace
         0x1f, 0xff, 0x80, //  ############ (Saucer)
         0x0f, 0xff, 0x00, //   ##########
         0x00, 0x00, 0x00};
+
+    // --- Small 8x8 tea cup icon for header ---
+    const unsigned char smallTeaIcon[] PROGMEM = {
+        0x24, // .#..#...
+        0x48, // .#..#...
+        0x24, // ..#..#..
+        0xFE, // #######.
+        0x83, // #.....##
+        0x83, // #.....##
+        0xFE, // #######.
+        0x7C  // .#####..
+    };
 } // anonymous namespace
 
 DisplayManager::DisplayManager()
@@ -97,11 +109,33 @@ bool DisplayManager::begin()
     displayReady = true;
     DEBUG_PRINTLN(F("[DisplayManager] Initialized successfully."));
 
-    showIdle();
+    // Show a simple splash until first real update
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.setCursor(10, 24);
+    display.print(F("TEA MIXER"));
+    display.display();
     return true;
 }
 
-void DisplayManager::showIdle(float temperature, float weight)
+// =========================================================================
+// Idle Screen — Beautiful layout with sensor data + 3 button names
+// =========================================================================
+//
+// Layout (128x64):
+//  ┌────────────────────────────┐
+//  │      T E A  M I X E R     │  y=0..11   Title (size 1, spaced)
+//  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤  y=12      Dotted divider
+//  │  ☕ 25.5°C    ⚖ 123g     │  y=15..23  Sensor row with icons
+//  ├────────────────────────────┤  y=26      Solid divider
+//  │  ▸ Pon Hman               │  y=30
+//  │  ▸ Cho Saint              │  y=41
+//  │  ▸ Kya Saint              │  y=52
+//  └────────────────────────────┘
+//
+void DisplayManager::showIdle(const String &btn1, const String &btn2, const String &btn3,
+                              float temperature, float weight)
 {
     if (!displayReady)
         return;
@@ -109,23 +143,33 @@ void DisplayManager::showIdle(float temperature, float weight)
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
 
-    // 1. Header Bar
+    // --- Header: "TEA MIXER" centered, size 1, letter-spaced for elegance ---
+    // Manually space each letter for a refined look
+    const char title[] = "T E A   M I X E R";
+    int titleWidth = strlen(title) * 6; // 6px per char at size 1
+    int titleX = (SCREEN_WIDTH - titleWidth) / 2;
     display.setTextSize(1);
-    display.setCursor(37, 2);
-    display.print(F("TEA MIXER"));
-    display.drawFastHLine(0, 13, SCREEN_WIDTH, SSD1306_WHITE);
+    display.setCursor(titleX, 2);
+    display.print(title);
 
-    // 2. Vertical Column Divider (Center line)
-    display.drawFastVLine(64, 14, 38, SSD1306_WHITE);
+    // Dotted divider under title — elegant dashed line
+    for (int x = 4; x < SCREEN_WIDTH - 4; x += 3)
+    {
+        display.drawPixel(x, 12, SSD1306_WHITE);
+    }
 
-    // --- LEFT COLUMN: TEMPERATURE ---
+    // --- Sensor Row: icon + value on each side ---
+
+    // Left: Temperature — small thermometer icon (drawn manually)
+    // Thermometer: vertical bar with bulb
+    display.drawFastVLine(8, 15, 6, SSD1306_WHITE);   // stem
+    display.drawPixel(7, 21, SSD1306_WHITE);           // bulb left
+    display.drawPixel(9, 21, SSD1306_WHITE);           // bulb right
+    display.drawPixel(8, 22, SSD1306_WHITE);           // bulb bottom
+    display.drawPixel(8, 14, SSD1306_WHITE);           // top cap
+
     display.setTextSize(1);
-    display.setCursor(20, 18);
-    display.print(F("TEMP"));
-
-    display.setTextSize(2);
-    display.setCursor(4, 32);
-    // Print 1 decimal place if < 100, otherwise print whole number to fit
+    display.setCursor(14, 16);
     if (temperature < 100.0f)
     {
         display.print(temperature, 1);
@@ -134,26 +178,145 @@ void DisplayManager::showIdle(float temperature, float weight)
     {
         display.print((int)temperature);
     }
-    display.setTextSize(1);
-    display.print((char)247); // Degree symbol (°) in Adafruit GFX font
+    display.print((char)247); // ° symbol
     display.print(F("C"));
 
-    // --- RIGHT COLUMN: WEIGHT ---
-    display.setTextSize(1);
-    display.setCursor(76, 18);
-    display.print(F("WEIGHT"));
+    // Right: Weight — small scale/weight icon (drawn manually)
+    // Simple weight icon: a small diamond shape
+    int wx = SCREEN_WIDTH - 58; // icon start x
+    display.drawPixel(wx + 2, 15, SSD1306_WHITE);     // top
+    display.drawPixel(wx + 1, 16, SSD1306_WHITE);     // left
+    display.drawPixel(wx + 3, 16, SSD1306_WHITE);     // right
+    display.drawPixel(wx, 17, SSD1306_WHITE);          // far left
+    display.drawPixel(wx + 4, 17, SSD1306_WHITE);     // far right
+    display.drawPixel(wx + 1, 18, SSD1306_WHITE);     // left
+    display.drawPixel(wx + 3, 18, SSD1306_WHITE);     // right
+    display.drawPixel(wx + 2, 19, SSD1306_WHITE);     // bottom
+    display.drawFastHLine(wx, 20, 5, SSD1306_WHITE);  // base line
 
-    display.setTextSize(2);
-    display.setCursor(70, 32);
-    display.print((int)weight); // Display weight as whole grams
-    display.setTextSize(1);
+    display.setCursor(wx + 7, 16);
+    display.print((int)weight);
     display.print(F("g"));
 
-    // 3. Footer Bar
-    display.drawFastHLine(0, 52, SCREEN_WIDTH, SSD1306_WHITE);
+    // Solid divider between sensors and button list
+    display.drawFastHLine(0, 26, SCREEN_WIDTH, SSD1306_WHITE);
+
+    // --- Button List ---
+    const String *names[] = {&btn1, &btn2, &btn3};
+    const int startY = 30;
+    const int rowHeight = 11;
+
+    for (int i = 0; i < 3; i++)
+    {
+        int y = startY + i * rowHeight;
+
+        // Triangle bullet: ▸
+        // Small filled triangle (3x5 pixels)
+        int triX = 6;
+        int triY = y + 1;
+        display.drawLine(triX, triY, triX, triY + 4, SSD1306_WHITE);
+        display.drawLine(triX + 1, triY + 1, triX + 1, triY + 3, SSD1306_WHITE);
+        display.drawPixel(triX + 2, triY + 2, SSD1306_WHITE);
+
+        // Button name
+        display.setCursor(14, y);
+        display.print(*names[i]);
+    }
+
+    display.display();
+}
+
+// =========================================================================
+// Recipe Preview Screen — Shows recipe details before brewing
+// =========================================================================
+//
+// Layout (128x64):
+//  ┌────────────────────────────┐
+//  │     ▸ Pon Hman             │  y=0..15   Name (size 1, centered)
+//  ├────────────────────────────┤  y=16      Divider
+//  │  Tea           240ml      │  y=19
+//  │  Condensed      30ml      │  y=28
+//  │  Evaporated     30ml      │  y=37
+//  │  Milk            0ml      │  y=46
+//  ├────────────────────────────┤  y=54      Divider
+//  │   Press to brew ☕         │  y=56      Footer prompt
+//  └────────────────────────────┘
+//
+void DisplayManager::showRecipePreview(const String &name, const TeaRecipe &recipe)
+{
+    if (!displayReady)
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+
+    // --- Header: Recipe name centered ---
+    // Draw a small triangle bullet before the name
     display.setTextSize(1);
-    display.setCursor(49, 55);
-    display.print(F("READY"));
+
+    // Calculate centered position for "▸ Name"
+    int nameLen = name.length() + 2; // "▸ " prefix
+    int nameX = (SCREEN_WIDTH - (nameLen * 6)) / 2;
+    if (nameX < 2)
+        nameX = 2;
+
+    // Triangle bullet
+    int triX = nameX;
+    int triY = 5;
+    display.drawLine(triX, triY, triX, triY + 4, SSD1306_WHITE);
+    display.drawLine(triX + 1, triY + 1, triX + 1, triY + 3, SSD1306_WHITE);
+    display.drawPixel(triX + 2, triY + 2, SSD1306_WHITE);
+
+    display.setCursor(nameX + 6, 4);
+    display.print(name);
+
+    // Decorative border around header
+    display.drawRoundRect(0, 0, SCREEN_WIDTH, 14, 2, SSD1306_WHITE);
+
+    // --- Recipe Details ---
+    const char *labels[] = {"Tea", "Condensed", "Evaporated", "Milk"};
+    const int values[] = {recipe.tea, recipe.condensedMilk, recipe.evaporatedMilk, recipe.milk};
+
+    int detailStartY = 18;
+    int rowH = 9;
+
+    for (int i = 0; i < 4; i++)
+    {
+        int y = detailStartY + i * rowH;
+
+        display.setCursor(6, y);
+        display.print(labels[i]);
+
+        // Right-aligned value with "ml" suffix
+        char valBuf[10];
+        snprintf(valBuf, sizeof(valBuf), "%dml", values[i]);
+        int valWidth = strlen(valBuf) * 6;
+        display.setCursor(SCREEN_WIDTH - valWidth - 6, y);
+        display.print(valBuf);
+
+        // Dotted leader line between label and value
+        int labelEnd = 6 + strlen(labels[i]) * 6 + 4;
+        int valStart = SCREEN_WIDTH - valWidth - 6 - 4;
+        for (int dx = labelEnd; dx < valStart; dx += 3)
+        {
+            display.drawPixel(dx, y + 3, SSD1306_WHITE);
+        }
+    }
+
+    // --- Footer ---
+    display.drawFastHLine(0, 54, SCREEN_WIDTH, SSD1306_WHITE);
+
+    // "Press to brew" centered with tea icon
+    const char *footerText = "Press to brew";
+    int footerLen = strlen(footerText);
+    int totalFooterW = footerLen * 6 + 10; // text + space + icon
+    int footerX = (SCREEN_WIDTH - totalFooterW) / 2;
+
+    display.setCursor(footerX, 56);
+    display.print(footerText);
+
+    // Small tea cup icon next to text
+    display.drawBitmap(footerX + footerLen * 6 + 2, 56, smallTeaIcon, 8, 8, SSD1306_WHITE);
 
     display.display();
 }
