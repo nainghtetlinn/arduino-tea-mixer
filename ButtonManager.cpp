@@ -186,7 +186,7 @@ String ButtonManager::getButtonName(int index)
 {
     char key[16];
     Preferences prefs;
-    prefs.begin("tea_settings", true);
+    prefs.begin(PREFS_NAMESPACE_TEA, true);
     makeNvsKey(key, sizeof(key), index, "name");
     String name = prefs.getString(key, defaultNames[index]);
     prefs.end();

@@ -10,8 +10,7 @@ class DisplayManager
 public:
     DisplayManager();
     bool begin();
-    void showIdle(const String &btn1, const String &btn2, const String &btn3,
-                  float temperature = 0.0f, float weight = 0.0f);
+    void showIdle(const String &btn1, const String &btn2, const String &btn3);
     void showRecipePreview(const String &name, const TeaRecipe &recipe);
     void showReady();
     void showProgress(uint8_t progress);

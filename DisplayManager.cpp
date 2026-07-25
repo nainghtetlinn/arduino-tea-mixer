@@ -120,22 +120,19 @@ bool DisplayManager::begin()
 }
 
 // =========================================================================
-// Idle Screen — Beautiful layout with sensor data + 3 button names
+// Idle Screen — Beautiful layout with tea icon header + 3 button names
 // =========================================================================
 //
 // Layout (128x64):
 //  ┌────────────────────────────┐
-//  │      T E A  M I X E R     │  y=0..11   Title (size 1, spaced)
-//  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤  y=12      Dotted divider
-//  │  ☕ 25.5°C    ⚖ 123g     │  y=15..23  Sensor row with icons
-//  ├────────────────────────────┤  y=26      Solid divider
-//  │  ▸ Pon Hman               │  y=30
-//  │  ▸ Cho Saint              │  y=41
-//  │  ▸ Kya Saint              │  y=52
+//  │    ☕ Tea Mixer            │  y=2..10   Icon + Title (size 1)
+//  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤  y=14      Dotted divider
+//  │  ▸ Pon Hman               │  y=21
+//  │  ▸ Cho Saint              │  y=35
+//  │  ▸ Kya Saint              │  y=49
 //  └────────────────────────────┘
 //
-void DisplayManager::showIdle(const String &btn1, const String &btn2, const String &btn3,
-                              float temperature, float weight)
+void DisplayManager::showIdle(const String &btn1, const String &btn2, const String &btn3)
 {
     if (!displayReady)
         return;
@@ -143,83 +140,48 @@ void DisplayManager::showIdle(const String &btn1, const String &btn2, const Stri
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
 
-    // --- Header: "TEA MIXER" centered, size 1, letter-spaced for elegance ---
-    // Manually space each letter for a refined look
-    const char title[] = "T E A   M I X E R";
+    // --- Header: Tea Icon + "Tea Mixer" centered ---
+    const char title[] = "Tea Mixer";
+    constexpr int iconWidth = 8;
+    constexpr int iconHeight = 8;
+    constexpr int gap = 4;
     int titleWidth = strlen(title) * 6; // 6px per char at size 1
-    int titleX = (SCREEN_WIDTH - titleWidth) / 2;
+    int totalWidth = iconWidth + gap + titleWidth;
+    int startX = (SCREEN_WIDTH - totalWidth) / 2;
+    int headerY = 2;
+
+    // Draw small tea icon on left
+    display.drawBitmap(startX, headerY, smallTeaIcon, iconWidth, iconHeight, SSD1306_WHITE);
+
+    // Draw "Tea Mixer" text
     display.setTextSize(1);
-    display.setCursor(titleX, 2);
+    display.setCursor(startX + iconWidth + gap, headerY);
     display.print(title);
 
     // Dotted divider under title — elegant dashed line
     for (int x = 4; x < SCREEN_WIDTH - 4; x += 3)
     {
-        display.drawPixel(x, 12, SSD1306_WHITE);
+        display.drawPixel(x, 14, SSD1306_WHITE);
     }
-
-    // --- Sensor Row: icon + value on each side ---
-
-    // Left: Temperature — small thermometer icon (drawn manually)
-    // Thermometer: vertical bar with bulb
-    display.drawFastVLine(8, 15, 6, SSD1306_WHITE);   // stem
-    display.drawPixel(7, 21, SSD1306_WHITE);           // bulb left
-    display.drawPixel(9, 21, SSD1306_WHITE);           // bulb right
-    display.drawPixel(8, 22, SSD1306_WHITE);           // bulb bottom
-    display.drawPixel(8, 14, SSD1306_WHITE);           // top cap
-
-    display.setTextSize(1);
-    display.setCursor(14, 16);
-    if (temperature < 100.0f)
-    {
-        display.print(temperature, 1);
-    }
-    else
-    {
-        display.print((int)temperature);
-    }
-    display.print((char)247); // ° symbol
-    display.print(F("C"));
-
-    // Right: Weight — small scale/weight icon (drawn manually)
-    // Simple weight icon: a small diamond shape
-    int wx = SCREEN_WIDTH - 58; // icon start x
-    display.drawPixel(wx + 2, 15, SSD1306_WHITE);     // top
-    display.drawPixel(wx + 1, 16, SSD1306_WHITE);     // left
-    display.drawPixel(wx + 3, 16, SSD1306_WHITE);     // right
-    display.drawPixel(wx, 17, SSD1306_WHITE);          // far left
-    display.drawPixel(wx + 4, 17, SSD1306_WHITE);     // far right
-    display.drawPixel(wx + 1, 18, SSD1306_WHITE);     // left
-    display.drawPixel(wx + 3, 18, SSD1306_WHITE);     // right
-    display.drawPixel(wx + 2, 19, SSD1306_WHITE);     // bottom
-    display.drawFastHLine(wx, 20, 5, SSD1306_WHITE);  // base line
-
-    display.setCursor(wx + 7, 16);
-    display.print((int)weight);
-    display.print(F("g"));
-
-    // Solid divider between sensors and button list
-    display.drawFastHLine(0, 26, SCREEN_WIDTH, SSD1306_WHITE);
 
     // --- Button List ---
     const String *names[] = {&btn1, &btn2, &btn3};
-    const int startY = 30;
-    const int rowHeight = 11;
+    const int startY = 21;
+    const int rowHeight = 14;
 
     for (int i = 0; i < 3; i++)
     {
         int y = startY + i * rowHeight;
 
         // Triangle bullet: ▸
-        // Small filled triangle (3x5 pixels)
-        int triX = 6;
+        int triX = 8;
         int triY = y + 1;
         display.drawLine(triX, triY, triX, triY + 4, SSD1306_WHITE);
         display.drawLine(triX + 1, triY + 1, triX + 1, triY + 3, SSD1306_WHITE);
         display.drawPixel(triX + 2, triY + 2, SSD1306_WHITE);
 
         // Button name
-        display.setCursor(14, y);
+        display.setCursor(16, y);
         display.print(*names[i]);
     }
 
@@ -239,7 +201,7 @@ void DisplayManager::showIdle(const String &btn1, const String &btn2, const Stri
 //  │  Evaporated     30ml      │  y=37
 //  │  Milk            0ml      │  y=46
 //  ├────────────────────────────┤  y=54      Divider
-//  │   Press to brew ☕         │  y=56      Footer prompt
+//  │   Press again to brew ☕     │  y=56      Footer prompt
 //  └────────────────────────────┘
 //
 void DisplayManager::showRecipePreview(const String &name, const TeaRecipe &recipe)
@@ -307,7 +269,7 @@ void DisplayManager::showRecipePreview(const String &name, const TeaRecipe &reci
     display.drawFastHLine(0, 54, SCREEN_WIDTH, SSD1306_WHITE);
 
     // "Press to brew" centered with tea icon
-    const char *footerText = "Press to brew";
+    const char *footerText = "Press again to brew";
     int footerLen = strlen(footerText);
     int totalFooterW = footerLen * 6 + 10; // text + space + icon
     int footerX = (SCREEN_WIDTH - totalFooterW) / 2;

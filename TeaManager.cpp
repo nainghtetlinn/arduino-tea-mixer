@@ -670,9 +670,7 @@ void TeaManager::updateDisplay()
         String n0 = buttonMgr ? buttonMgr->getButtonName(0) : F("---");
         String n1 = buttonMgr ? buttonMgr->getButtonName(1) : F("---");
         String n2 = buttonMgr ? buttonMgr->getButtonName(2) : F("---");
-        float temp = sensorMgr ? sensorMgr->getTemperature() : 0.0f;
-        float wt   = sensorMgr ? sensorMgr->getWeight() : 0.0f;
-        displayMgr->showIdle(n0, n1, n2, temp, wt);
+        displayMgr->showIdle(n0, n1, n2);
         break;
     }
     case TeaState::PREVIEW:
