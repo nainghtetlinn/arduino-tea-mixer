@@ -289,14 +289,51 @@ void DisplayManager::showReady()
         return;
 
     display.clearDisplay();
+
+    // 1. Animated steaming tea cup icon at top center
+    constexpr int iconX = (SCREEN_WIDTH - ICON_WIDTH) / 2;
+    constexpr int iconY = 2;
+
+    const bool useFrame1 = ((millis() / ANIMATION_SPEED_MS) % 2 == 0);
+    const unsigned char *icon = useFrame1 ? teaIconFrame1 : teaIconFrame2;
+
+    display.drawBitmap(iconX, iconY, icon, ICON_WIDTH, ICON_HEIGHT, SSD1306_WHITE);
+
+    // 2. Decorative sparkle accents on sides
+    // Left sparkle
+    display.drawFastHLine(18, 13, 5, SSD1306_WHITE);
+    display.drawFastVLine(20, 11, 5, SSD1306_WHITE);
+
+    // Right sparkle
+    display.drawFastHLine(102, 13, 5, SSD1306_WHITE);
+    display.drawFastVLine(104, 11, 5, SSD1306_WHITE);
+
+    // 3. Highlighted badge: "TEA IS READY!"
+    constexpr int badgeX = 8;
+    constexpr int badgeY = 28;
+    constexpr int badgeW = 112;
+    constexpr int badgeH = 17;
+
+    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
+
+    // Inverted black text inside white badge
+    const char msg[] = "TEA IS READY!";
+    int msgWidth = strlen(msg) * 6;
+    int msgX = (SCREEN_WIDTH - msgWidth) / 2;
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.setCursor(msgX, badgeY + 5);
+    display.print(msg);
+
+    // 4. Footer subtext
+    const char footer[] = "Enjoy your drink!";
+    int footerWidth = strlen(footer) * 6;
+    int footerX = (SCREEN_WIDTH - footerWidth) / 2;
+
     display.setTextColor(SSD1306_WHITE);
-
-    display.setTextSize(2);
-    display.setCursor((SCREEN_WIDTH - 72) / 2, 14);
-    display.print(F("Tea is"));
-
-    display.setCursor((SCREEN_WIDTH - 60) / 2, 39);
-    display.print(F("Ready"));
+    display.setCursor(footerX, 51);
+    display.print(footer);
 
     display.display();
 }
