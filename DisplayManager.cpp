@@ -107,6 +107,7 @@ void DisplayManager::showIdle(float temperature, float weight)
         return;
 
     display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
 
     // 1. Header Bar
     display.setTextSize(1);
@@ -163,6 +164,7 @@ void DisplayManager::showReady()
         return;
 
     display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
 
     display.setTextSize(2);
     display.setCursor((SCREEN_WIDTH - 72) / 2, 14);
@@ -208,6 +210,7 @@ void DisplayManager::showProgress(uint8_t progress)
 
     // 4. Draw percentage text centered below progress bar
     display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
 
     // Dynamic width calculation: "Brewing... " (11) + progress digits (1-3) + "%" (1)
     const uint8_t charCount = 12 + (progress >= 100 ? 3 : (progress >= 10 ? 2 : 1));
