@@ -123,3 +123,8 @@ void BluetoothManager::sendError(const String &errorCode, const String &errorMes
 
     DEBUG_PRINTLN("NOTIFY: " + errorCode);
 }
+
+bool BluetoothManager::isConnected() const
+{
+    return isDeviceConnected;
+}

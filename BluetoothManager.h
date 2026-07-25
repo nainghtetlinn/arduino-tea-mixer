@@ -16,12 +16,14 @@ public:
     void begin(OnWriteCallback onWriteCb);
     void sendJSON(const String &type, const JsonDocument &payload);
     void sendError(const String &errorCode, const String &errorMessage);
+    bool isConnected() const;
 
 private:
     OnWriteCallback bleOnWriteCb;
 
     BLECharacteristic *pCharacteristic;
     BLEServer *pServer;
+
     bool isDeviceConnected;
 
     friend class ServerCallbacks;
