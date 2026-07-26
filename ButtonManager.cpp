@@ -40,13 +40,12 @@ void ButtonManager::begin(ButtonPressCallback pressCb)
 {
     btnPressCb = pressCb;
 
-    buttons[0]
-        .attachClick(
-            [](void *ctx)
-            {
-                static_cast<ButtonManager *>(ctx)->handleButtonClick(0);
-            },
-            this);
+    buttons[0].attachClick(
+        [](void *ctx)
+        {
+            static_cast<ButtonManager *>(ctx)->handleButtonClick(0);
+        },
+        this);
     buttons[1].attachClick(
         [](void *ctx)
         {

@@ -11,7 +11,7 @@ namespace
     constexpr unsigned long DISPENSING_CHECK_INTERVAL_MS = 100;
 
     // Dispensing mode: true = weight-based, false = time-based
-    constexpr bool DISPENSING_MODE_WEIGHT = false;
+    constexpr bool DISPENSING_MODE_WEIGHT = true;
 
     // Weight tolerance - stop relay when within this margin (grams)
     constexpr float WEIGHT_TOLERANCE_G = 2.0f;
