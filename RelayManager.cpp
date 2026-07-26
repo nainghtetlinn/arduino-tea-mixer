@@ -73,12 +73,9 @@ bool RelayManager::isRelayActive(uint8_t index) const
 
 void RelayManager::setupRelayPins()
 {
-    const uint8_t pins[] = {PIN_RELAY_TEA, PIN_RELAY_CONDENSED_MILK,
-                            PIN_RELAY_EVAPORATED_MILK, PIN_RELAY_MILK};
-
     for (uint8_t i = 0; i < RELAY_COUNT; i++)
     {
-        pinMode(pins[i], OUTPUT);
+        pinMode(getRelayPin(i), OUTPUT);
         // Ensure all relays start OFF
         setRelay(i, false);
     }
