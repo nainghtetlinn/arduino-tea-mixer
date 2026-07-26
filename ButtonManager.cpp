@@ -4,16 +4,13 @@
 
 namespace
 {
-    // --- Constants ---
-    constexpr uint8_t NUM_BUTTONS = 3;
-
     // --- Pins ---
     constexpr uint8_t PIN_BTN_1 = 27;
     constexpr uint8_t PIN_BTN_2 = 26;
     constexpr uint8_t PIN_BTN_3 = 25;
 
-    // NVS
-    constexpr char PREFS_NAMESPACE_TEA[] = "tea_settings";
+    // --- Constants ---
+    constexpr uint8_t NUM_BUTTONS = 3;
 
     // Default recipes in case none are saved in NVS
     const char *defaultNames[NUM_BUTTONS] = {
@@ -172,7 +169,7 @@ void ButtonManager::setButtonInfo(int index, ButtonInfo info)
     char key[16];
 
     Preferences prefs;
-    prefs.begin(PREFS_NAMESPACE_TEA, false);
+    prefs.begin("tea_settings", false);
 
     makeNvsKey(key, sizeof(key), index, "name");
     prefs.putString(key, info.name);
@@ -207,7 +204,7 @@ ButtonInfo ButtonManager::getButtonInfo(int index)
     char key[16];
 
     Preferences prefs;
-    prefs.begin(PREFS_NAMESPACE_TEA, true);
+    prefs.begin("tea_settings", true);
 
     makeNvsKey(key, sizeof(key), index, "name");
     info.name = prefs.getString(key, defaultNames[index]);
@@ -282,7 +279,7 @@ String ButtonManager::getButtonName(int index)
 {
     char key[16];
     Preferences prefs;
-    prefs.begin(PREFS_NAMESPACE_TEA, true);
+    prefs.begin("tea_settings", true);
     makeNvsKey(key, sizeof(key), index, "name");
     String name = prefs.getString(key, defaultNames[index]);
     prefs.end();
