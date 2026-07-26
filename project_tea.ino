@@ -20,7 +20,8 @@ void setup()
     Serial.begin(115200);
     delay(1000);
 
-    bluetoothManager.begin(
+    bluetoothManager.begin();
+    bluetoothManager.attachOnWriteCallback(
         [](const JsonDocument &doc)
         {
             String type = doc["type"].as<String>();
@@ -50,21 +51,71 @@ void setup()
                 DEBUG_PRINTLN(F("Unknown Type"));
         });
 
-    buttonManager.begin(
+    buttonManager.begin();
+    buttonManager.attachPressCallback(
         [](const int &btnIndex)
         {
             TeaState state = teaManager.getState();
 
-            if (state == TeaState::IDLE)
+            if (state == TeaState::CALIBRATION)
+            {
+                if (btnIndex == 0)
+                {
+                    // Btn 1 clicked while calibration mode is active: reset weight reading to 0
+                    teaManager.resetCalibrationWeight();
+                }
+                else if (btnIndex == 1)
+                {
+                    // Btn 2 clicked while calibration mode is active: toggle dispensing mode (WEIGHT <-> TIME)
+                    teaManager.toggleDispensingMode();
+                }
+            }
+            else if (state == TeaState::CLEANING)
+            {
+                // Any button click while cleaning cancels cleaning mode immediately
+                teaManager.cancelCleaningMode();
+            }
+            else if (state == TeaState::IDLE)
             {
                 // First press: show recipe preview
                 ButtonInfo info = buttonManager.getButtonInfo(btnIndex);
-                teaManager.previewRecipe(info);
+                teaManager.previewRecipe(btnIndex, info);
             }
             else if (state == TeaState::PREVIEW)
             {
-                // Second press while previewing: confirm and start brewing
-                teaManager.confirmBrew();
+                if (btnIndex == teaManager.getPreviewButtonIndex())
+                {
+                    // Same button pressed again: confirm and start brewing
+                    teaManager.confirmBrew();
+                }
+                else
+                {
+                    // Different button: switch to its recipe preview
+                    ButtonInfo info = buttonManager.getButtonInfo(btnIndex);
+                    teaManager.previewRecipe(btnIndex, info);
+                }
+            }
+        });
+
+    buttonManager.attachComboCallback(
+        []()
+        {
+            if (teaManager.getState() == TeaState::IDLE)
+            {
+                teaManager.startCleaningMode();
+            }
+        });
+
+    buttonManager.attachCalibrationComboCallback(
+        []()
+        {
+            if (teaManager.getState() == TeaState::CALIBRATION)
+            {
+                teaManager.exitCalibrationMode();
+            }
+            else if (teaManager.getState() == TeaState::IDLE)
+            {
+                teaManager.startCalibrationMode();
             }
         });
 
@@ -74,20 +125,13 @@ void setup()
 
     relayManager.begin();
 
-    // Initialize TeaManager with RelayManager, SensorManager, and callbacks
+    // Initialize TeaManager with RelayManager, SensorManager, DisplayManager, ButtonManager, and BluetoothManager
     teaManager.begin(
         &relayManager,
         &sensorManager,
         &displayManager,
         &buttonManager,
-        [](const String &type, const JsonDocument &data)
-        {
-            bluetoothManager.sendJSON(type, data);
-        },
-        [](const String &errorCode, const String &errorMessage)
-        {
-            bluetoothManager.sendError(errorCode, errorMessage);
-        });
+        &bluetoothManager);
 
     DEBUG_PRINTLN("Tea Mixer Ready");
 }

@@ -14,6 +14,9 @@ public:
     void showRecipePreview(const String &name, const TeaRecipe &recipe);
     void showReady();
     void showProgress(uint8_t progress);
+    void showCleaningProgress(uint8_t remainingSeconds, uint8_t progress);
+    void showCleaningComplete();
+    void showCalibration(float temperature, float weight, bool weightMode);
 
 private:
     Adafruit_SSD1306 display;

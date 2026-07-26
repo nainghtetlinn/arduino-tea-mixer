@@ -9,6 +9,8 @@ enum class TeaState : uint8_t
     IDLE,
     PREVIEW,
     MAKING,
+    CLEANING,
+    CALIBRATION,
     FINISHED,
     ERROR
 };

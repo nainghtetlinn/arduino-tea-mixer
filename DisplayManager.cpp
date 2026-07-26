@@ -268,14 +268,26 @@ void DisplayManager::showRecipePreview(const String &name, const TeaRecipe &reci
     // --- Footer ---
     display.drawFastHLine(0, 54, SCREEN_WIDTH, SSD1306_WHITE);
 
-    // "Press to brew" centered with tea icon
-    const char *footerText = "Press again to brew";
-    int footerLen = strlen(footerText);
+    // Dynamic footer: "Press [name] to brew" with tea icon
+    // Build the footer string dynamically
+    String footerStr = "Press " + name + " to brew";
+    int footerLen = footerStr.length();
+
+    // If too long for screen, fall back to generic text
     int totalFooterW = footerLen * 6 + 10; // text + space + icon
+    if (totalFooterW > SCREEN_WIDTH)
+    {
+        footerStr = "Press again to brew";
+        footerLen = footerStr.length();
+        totalFooterW = footerLen * 6 + 10;
+    }
+
     int footerX = (SCREEN_WIDTH - totalFooterW) / 2;
+    if (footerX < 0)
+        footerX = 0;
 
     display.setCursor(footerX, 56);
-    display.print(footerText);
+    display.print(footerStr);
 
     // Small tea cup icon next to text
     display.drawBitmap(footerX + footerLen * 6 + 2, 56, smallTeaIcon, 8, 8, SSD1306_WHITE);
@@ -382,6 +394,181 @@ void DisplayManager::showProgress(uint8_t progress)
     display.print(F("Brewing... "));
     display.print(progress);
     display.print(F("%"));
+
+    display.display();
+}
+
+void DisplayManager::showCleaningProgress(uint8_t remainingSeconds, uint8_t progress)
+{
+    if (!displayReady)
+        return;
+
+    progress = constrain(progress, 0, 100);
+    display.clearDisplay();
+
+    // 1. Header Badge: "CLEANING MODE"
+    constexpr int badgeX = 8;
+    constexpr int badgeY = 2;
+    constexpr int badgeW = 112;
+    constexpr int badgeH = 15;
+
+    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 3, SSD1306_WHITE);
+
+    const char title[] = "CLEANING MODE";
+    int titleWidth = strlen(title) * 6;
+    int titleX = (SCREEN_WIDTH - titleWidth) / 2;
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.setCursor(titleX, badgeY + 4);
+    display.print(title);
+
+    // 2. Subtitle: "Flushing lines..."
+    display.setTextColor(SSD1306_WHITE);
+    const char sub[] = "Flushing lines...";
+    int subWidth = strlen(sub) * 6;
+    display.setCursor((SCREEN_WIDTH - subWidth) / 2, 20);
+    display.print(sub);
+
+    // 3. Progress Bar Container
+    constexpr int barX = 14;
+    constexpr int barY = 32;
+    constexpr int barWidth = 100;
+    constexpr int barHeight = 11;
+    display.drawRoundRect(barX, barY, barWidth, barHeight, 3, SSD1306_WHITE);
+
+    // 4. Progress Bar Fill
+    const int fillWidth = map(progress, 0, 100, 0, barWidth - 4);
+    if (fillWidth > 0)
+    {
+        display.fillRoundRect(barX + 2, barY + 2, fillWidth, barHeight - 4, 2, SSD1306_WHITE);
+    }
+
+    // 5. Timer text: "Time remaining: XXs"
+    char timeBuf[24];
+    snprintf(timeBuf, sizeof(timeBuf), "Time: %ds", remainingSeconds);
+    int timeWidth = strlen(timeBuf) * 6;
+    display.setCursor((SCREEN_WIDTH - timeWidth) / 2, 48);
+    display.print(timeBuf);
+
+    display.display();
+}
+
+void DisplayManager::showCleaningComplete()
+{
+    if (!displayReady)
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+
+    // Header badge
+    constexpr int badgeX = 8;
+    constexpr int badgeY = 16;
+    constexpr int badgeW = 112;
+    constexpr int badgeH = 20;
+
+    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
+
+    const char msg[] = "CLEAN COMPLETE";
+    int msgWidth = strlen(msg) * 6;
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.setCursor((SCREEN_WIDTH - msgWidth) / 2, badgeY + 6);
+    display.print(msg);
+
+    // Subtext
+    display.setTextColor(SSD1306_WHITE);
+    const char sub[] = "Lines flushed clear!";
+    int subWidth = strlen(sub) * 6;
+    display.setCursor((SCREEN_WIDTH - subWidth) / 2, 44);
+    display.print(sub);
+
+    display.display();
+}
+
+void DisplayManager::showCalibration(float temperature, float weight, bool weightMode)
+{
+    if (!displayReady)
+        return;
+
+    display.clearDisplay();
+
+    // 1. Header Badge: "CALIBRATION MODE"
+    constexpr int badgeX = 8;
+    constexpr int badgeY = 0;
+    constexpr int badgeW = 112;
+    constexpr int badgeH = 13;
+
+    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 3, SSD1306_WHITE);
+
+    const char title[] = "CALIBRATION MODE";
+    int titleWidth = strlen(title) * 6;
+    int titleX = (SCREEN_WIDTH - titleWidth) / 2;
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.setCursor(titleX, badgeY + 3);
+    display.print(title);
+
+    // 2. Temperature Row
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(8, 16);
+    display.print(F("Temp:"));
+
+    char tempBuf[16];
+    snprintf(tempBuf, sizeof(tempBuf), "%.1f C", temperature);
+    int tempWidth = strlen(tempBuf) * 6;
+    display.setCursor(SCREEN_WIDTH - tempWidth - 8, 16);
+    display.print(tempBuf);
+
+    for (int x = 44; x < SCREEN_WIDTH - tempWidth - 12; x += 3)
+    {
+        display.drawPixel(x, 19, SSD1306_WHITE);
+    }
+
+    // 3. Weight Row
+    display.setCursor(8, 26);
+    display.print(F("Weight:"));
+
+    char weightBuf[16];
+    snprintf(weightBuf, sizeof(weightBuf), "%.1f g", weight);
+    int weightWidth = strlen(weightBuf) * 6;
+    display.setCursor(SCREEN_WIDTH - weightWidth - 8, 26);
+    display.print(weightBuf);
+
+    for (int x = 56; x < SCREEN_WIDTH - weightWidth - 12; x += 3)
+    {
+        display.drawPixel(x, 29, SSD1306_WHITE);
+    }
+
+    // 4. Dispensing Mode Row (WEIGHT vs TIME)
+    display.setCursor(8, 36);
+    display.print(F("Mode:"));
+
+    const char *modeStr = weightMode ? "WEIGHT" : "TIME";
+    int modeWidth = strlen(modeStr) * 6;
+    display.setCursor(SCREEN_WIDTH - modeWidth - 8, 36);
+    display.print(modeStr);
+
+    for (int x = 44; x < SCREEN_WIDTH - modeWidth - 12; x += 3)
+    {
+        display.drawPixel(x, 39, SSD1306_WHITE);
+    }
+
+    // 5. Footer Helper Lines
+    display.drawFastHLine(0, 46, SCREEN_WIDTH, SSD1306_WHITE);
+
+    const char footer1[] = "B1:Tare  |  B2:Mode";
+    int f1Width = strlen(footer1) * 6;
+    display.setCursor((SCREEN_WIDTH - f1Width) / 2, 48);
+    display.print(footer1);
+
+    const char footer2[] = "Hold B1+2 to Exit";
+    int f2Width = strlen(footer2) * 6;
+    display.setCursor((SCREEN_WIDTH - f2Width) / 2, 56);
+    display.print(footer2);
 
     display.display();
 }

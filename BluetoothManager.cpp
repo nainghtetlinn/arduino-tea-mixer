@@ -46,7 +46,10 @@ public:
         {
             if (doc["type"].is<const char *>())
             {
-                manager.bleOnWriteCb(doc);
+                if (manager.bleOnWriteCb)
+                {
+                    manager.bleOnWriteCb(doc);
+                }
             }
             else
                 DEBUG_PRINTLN("Unknown data");
@@ -62,10 +65,8 @@ BluetoothManager::BluetoothManager()
 {
 }
 
-void BluetoothManager::begin(OnWriteCallback onWriteCb)
+void BluetoothManager::begin()
 {
-    bleOnWriteCb = onWriteCb;
-
     BLEDevice::init(DEVICE_NAME);
     BLEDevice::setMTU(512);
 
@@ -84,6 +85,11 @@ void BluetoothManager::begin(OnWriteCallback onWriteCb)
 
     pService->start();
     pServer->getAdvertising()->start();
+}
+
+void BluetoothManager::attachOnWriteCallback(OnWriteCallback onWriteCb)
+{
+    bleOnWriteCb = onWriteCb;
 }
 
 void BluetoothManager::sendJSON(const String &type, const JsonDocument &payload)

@@ -29,17 +29,24 @@ namespace
 } // anonymous namespace
 
 ButtonManager::ButtonManager()
-    : btnPressCb(nullptr)
+    : btnPressCb(nullptr),
+      combo13Cb(nullptr),
+      combo12Cb(nullptr),
+      combo13HoldStartTime(0),
+      combo13Triggered(false),
+      combo12HoldStartTime(0),
+      combo12Triggered(false)
 {
+    suppressClick[0] = false;
+    suppressClick[1] = false;
+    suppressClick[2] = false;
     buttons[0] = OneButton(PIN_BTN_1, true, false);
     buttons[1] = OneButton(PIN_BTN_2, true, false);
     buttons[2] = OneButton(PIN_BTN_3, true, false);
 }
 
-void ButtonManager::begin(ButtonPressCallback pressCb)
+void ButtonManager::begin()
 {
-    btnPressCb = pressCb;
-
     buttons[0].attachClick(
         [](void *ctx)
         {
@@ -62,11 +69,96 @@ void ButtonManager::begin(ButtonPressCallback pressCb)
     DEBUG_PRINTLN(F("[ButtonManager] Initialized successfully."));
 }
 
+void ButtonManager::attachPressCallback(ButtonPressCallback pressCb)
+{
+    btnPressCb = pressCb;
+}
+
+void ButtonManager::attachComboCallback(ButtonComboCallback comboCallback)
+{
+    combo13Cb = comboCallback;
+}
+
+void ButtonManager::attachCalibrationComboCallback(ButtonComboCallback calComboCallback)
+{
+    combo12Cb = calComboCallback;
+}
+
 void ButtonManager::update()
 {
     for (int i = 0; i < NUM_BUTTONS; i++)
     {
         buttons[i].tick();
+    }
+
+    bool b1Pressed = (digitalRead(PIN_BTN_1) == LOW);
+    bool b2Pressed = (digitalRead(PIN_BTN_2) == LOW);
+    bool b3Pressed = (digitalRead(PIN_BTN_3) == LOW);
+
+    // --- Combo: Btn 1 + Btn 2 (Calibration Mode, 3s hold) ---
+    if (b1Pressed && b2Pressed && !b3Pressed)
+    {
+        if (combo12HoldStartTime == 0)
+        {
+            combo12HoldStartTime = millis();
+        }
+        else if (millis() - combo12HoldStartTime >= 3000 && !combo12Triggered)
+        {
+            combo12Triggered = true;
+            suppressClick[0] = true;
+            suppressClick[1] = true;
+            DEBUG_PRINTLN(F("[ButtonManager] Combo hold (Btn 1 + Btn 2 for 3s) detected!"));
+            if (combo12Cb)
+            {
+                combo12Cb();
+            }
+        }
+    }
+    else
+    {
+        combo12HoldStartTime = 0;
+        combo12Triggered = false;
+        if (!b1Pressed && !b3Pressed)
+        {
+            suppressClick[0] = false;
+        }
+        if (!b2Pressed)
+        {
+            suppressClick[1] = false;
+        }
+    }
+
+    // --- Combo: Btn 1 + Btn 3 (Cleaning Mode, 3s hold) ---
+    if (b1Pressed && b3Pressed && !b2Pressed)
+    {
+        if (combo13HoldStartTime == 0)
+        {
+            combo13HoldStartTime = millis();
+        }
+        else if (millis() - combo13HoldStartTime >= 3000 && !combo13Triggered)
+        {
+            combo13Triggered = true;
+            suppressClick[0] = true;
+            suppressClick[2] = true;
+            DEBUG_PRINTLN(F("[ButtonManager] Combo hold (Btn 1 + Btn 3 for 3s) detected!"));
+            if (combo13Cb)
+            {
+                combo13Cb();
+            }
+        }
+    }
+    else
+    {
+        combo13HoldStartTime = 0;
+        combo13Triggered = false;
+        if (!b1Pressed && !b2Pressed)
+        {
+            suppressClick[0] = false;
+        }
+        if (!b3Pressed)
+        {
+            suppressClick[2] = false;
+        }
     }
 }
 
@@ -173,6 +265,13 @@ void ButtonManager::makeNvsKey(char *buffer, size_t bufferSize, int index, const
 
 void ButtonManager::handleButtonClick(int index)
 {
+    if (index >= 0 && index < NUM_BUTTONS && suppressClick[index])
+    {
+        suppressClick[index] = false;
+        DEBUG_PRINTF("[ButtonManager] Button %d click suppressed due to combo hold release.\n", index + 1);
+        return;
+    }
+
     DEBUG_PRINTF("[ButtonManager] Button %d clicked.\n", index + 1);
 
     if (btnPressCb)
