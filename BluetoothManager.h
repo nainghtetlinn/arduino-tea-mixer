@@ -8,6 +8,7 @@
 #include <BLE2902.h>
 
 typedef void (*OnWriteCallback)(const JsonDocument &doc);
+typedef void (*OnConnectCallback)();
 
 class BluetoothManager
 {
@@ -15,12 +16,14 @@ public:
     BluetoothManager();
     void begin();
     void attachOnWriteCallback(OnWriteCallback onWriteCb);
+    void attachOnConnectCallback(OnConnectCallback onConnectCb);
     void sendJSON(const String &type, const JsonDocument &payload);
     void sendError(const String &errorCode, const String &errorMessage);
     bool isConnected() const;
 
 private:
     OnWriteCallback bleOnWriteCb;
+    OnConnectCallback bleOnConnectCb;
 
     BLECharacteristic *pCharacteristic;
     BLEServer *pServer;

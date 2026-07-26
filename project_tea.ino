@@ -51,6 +51,12 @@ void setup()
                 DEBUG_PRINTLN(F("Unknown Type"));
         });
 
+    bluetoothManager.attachOnConnectCallback(
+        []()
+        {
+            teaManager.showBleConnected();
+        });
+
     buttonManager.begin();
     buttonManager.attachPressCallback(
         [](const int &btnIndex)
@@ -97,7 +103,7 @@ void setup()
             }
         });
 
-    buttonManager.attachComboCallback(
+    buttonManager.attachCleaningComboCallback(
         []()
         {
             if (teaManager.getState() == TeaState::IDLE)

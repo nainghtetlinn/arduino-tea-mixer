@@ -24,7 +24,7 @@ RelayManager::RelayManager()
 void RelayManager::begin()
 {
     setupRelayPins();
-    DEBUG_PRINTLN(F("[RelayManager] Initialized"));
+    DEBUG_PRINTLN(F("[RelayManager] Initialized successfully."));
 }
 
 // =========================================================================

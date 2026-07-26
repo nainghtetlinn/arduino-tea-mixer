@@ -15,10 +15,6 @@ namespace
 
     // Default
     constexpr float DEFAULT_CALIBRATION_FACTOR = 886.47f;
-
-    // NVS
-    constexpr char PREFS_NAMESPACE[] = "sensors";
-    constexpr char PREFS_KEY_CAL_FACTOR[] = "cal_factor";
 } // anonymous namespace
 
 SensorManager::SensorManager()
@@ -115,8 +111,8 @@ void SensorManager::clearDataNew()
 void SensorManager::loadSavedCalibrationFactor()
 {
     Preferences prefs;
-    prefs.begin(PREFS_NAMESPACE, true);
-    activeCalibrationFactor = prefs.getFloat(PREFS_KEY_CAL_FACTOR, DEFAULT_CALIBRATION_FACTOR);
+    prefs.begin("tea_settings", true);
+    activeCalibrationFactor = prefs.getFloat("cal_factor", DEFAULT_CALIBRATION_FACTOR);
     prefs.end();
 
     if (std::isnan(activeCalibrationFactor) || activeCalibrationFactor <= 0.0f)
@@ -130,7 +126,7 @@ void SensorManager::saveCalibrationFactor(float newFactor)
     activeCalibrationFactor = newFactor;
 
     Preferences prefs;
-    prefs.begin(PREFS_NAMESPACE, false);
-    prefs.putFloat(PREFS_KEY_CAL_FACTOR, newFactor);
+    prefs.begin("tea_settings", false);
+    prefs.putFloat("cal_factor", newFactor);
     prefs.end();
 }

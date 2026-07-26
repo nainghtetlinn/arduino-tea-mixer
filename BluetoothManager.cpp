@@ -18,6 +18,10 @@ public:
     {
         manager.isDeviceConnected = true;
         DEBUG_PRINTLN("Client connected");
+        if (manager.bleOnConnectCb)
+        {
+            manager.bleOnConnectCb();
+        }
     }
 
     void onDisconnect(BLEServer *pServerInst) override
@@ -59,6 +63,7 @@ public:
 
 BluetoothManager::BluetoothManager()
     : bleOnWriteCb(nullptr),
+      bleOnConnectCb(nullptr),
       pCharacteristic(nullptr),
       pServer(nullptr),
       isDeviceConnected(false)
@@ -90,6 +95,11 @@ void BluetoothManager::begin()
 void BluetoothManager::attachOnWriteCallback(OnWriteCallback onWriteCb)
 {
     bleOnWriteCb = onWriteCb;
+}
+
+void BluetoothManager::attachOnConnectCallback(OnConnectCallback onConnectCb)
+{
+    bleOnConnectCb = onConnectCb;
 }
 
 void BluetoothManager::sendJSON(const String &type, const JsonDocument &payload)

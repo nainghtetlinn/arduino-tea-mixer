@@ -14,8 +14,8 @@ public:
     ButtonManager();
     void begin();
     void attachPressCallback(ButtonPressCallback pressCb);
-    void attachComboCallback(ButtonComboCallback comboCallback);
-    void attachCalibrationComboCallback(ButtonComboCallback calComboCallback);
+    void attachCleaningComboCallback(ButtonComboCallback comboCallback);
+    void attachCalibrationComboCallback(ButtonComboCallback comboCallback);
     void update();
     void setButtonInfo(int index, ButtonInfo info);
     ButtonInfo getButtonInfo(int index);

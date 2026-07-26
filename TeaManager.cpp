@@ -9,9 +9,10 @@
 
 namespace
 {
-    constexpr unsigned long TEA_FINISHED_INTERVAL_MS = 2000;
     constexpr unsigned long DISPENSING_CHECK_INTERVAL_MS = 100;
-    constexpr unsigned long PREVIEW_TIMEOUT_MS = 10000;
+    constexpr unsigned long PREVIEW_TIMEOUT_MS = 7000;
+    constexpr unsigned long BLE_CONNECTED_DISPLAY_MS = 3000;
+    constexpr float CUP_REMOVED_THRESHOLD = 0.30f; // weight must drop below 30% of finished weight
 
 } // anonymous namespace
 
@@ -26,8 +27,9 @@ TeaManager::TeaManager()
       currentState(TeaState::IDLE),
       currentProgress(0),
       lastUpdate(0),
-      lastFinished(0),
+      finishedWeight(0.0f),
       weightDispensingMode(true),
+      bleConnectedUntil(0),
       previewButtonIndex(-1),
       previewStartTime(0),
       activeStrategy(nullptr)
@@ -68,8 +70,8 @@ void TeaManager::update()
     {
         if (cleaningMode.update(relayMgr, displayMgr, bleMgr))
         {
-            currentState = TeaState::FINISHED;
-            lastFinished = millis();
+            currentState = TeaState::IDLE;
+            currentProgress = 0;
         }
         return;
     }
@@ -85,12 +87,15 @@ void TeaManager::update()
 
     case TeaState::FINISHED:
     {
-        unsigned long currentMillis = millis();
-        if (currentMillis - lastFinished >= TEA_FINISHED_INTERVAL_MS)
+        if (sensorMgr)
         {
-            currentState = TeaState::IDLE;
-            currentProgress = 0;
-            lastFinished = currentMillis;
+            float currentWeight = sensorMgr->getWeight();
+            if (currentWeight < finishedWeight * CUP_REMOVED_THRESHOLD)
+            {
+                currentState = TeaState::IDLE;
+                currentProgress = 0;
+                DEBUG_PRINTLN(F("[TeaManager] Cup removed — returning to idle"));
+            }
         }
         return;
     }
@@ -369,7 +374,7 @@ void TeaManager::finishDispensing()
 
     currentState = TeaState::FINISHED;
     currentProgress = 100;
-    lastFinished = millis();
+    finishedWeight = sensorMgr ? sensorMgr->getWeight() : 0.0f;
 
     DEBUG_PRINTLN(F("[TeaManager] Dispensing complete"));
 
@@ -412,6 +417,20 @@ void TeaManager::sendTeaFinishedJSON()
     }
 }
 
+// =========================================================================
+// BLE Connected Screen Overlay
+// =========================================================================
+
+void TeaManager::showBleConnected()
+{
+    bleConnectedUntil = millis() + BLE_CONNECTED_DISPLAY_MS;
+    if (displayMgr)
+    {
+        displayMgr->showConnected();
+    }
+    DEBUG_PRINTLN(F("[TeaManager] Showing BLE connected screen"));
+}
+
 void TeaManager::calculateProgress()
 {
     const int totalTarget = target.tea + target.condensedMilk + target.evaporatedMilk + target.milk;
@@ -428,6 +447,17 @@ void TeaManager::updateDisplay()
     if (!displayMgr)
         return;
 
+    // BLE connected overlay takes priority for its duration
+    if (bleConnectedUntil > 0)
+    {
+        if (millis() < bleConnectedUntil)
+        {
+            displayMgr->showConnected();
+            return;
+        }
+        bleConnectedUntil = 0;
+    }
+
     switch (currentState)
     {
     case TeaState::IDLE:
@@ -435,7 +465,8 @@ void TeaManager::updateDisplay()
         String n0 = buttonMgr ? buttonMgr->getButtonName(0) : F("---");
         String n1 = buttonMgr ? buttonMgr->getButtonName(1) : F("---");
         String n2 = buttonMgr ? buttonMgr->getButtonName(2) : F("---");
-        displayMgr->showIdle(n0, n1, n2);
+        bool ble = bleMgr ? bleMgr->isConnected() : false;
+        displayMgr->showIdle(n0, n1, n2, ble);
         break;
     }
     case TeaState::PREVIEW:

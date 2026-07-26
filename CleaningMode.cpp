@@ -16,7 +16,7 @@ namespace
 void CleaningMode::start(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
 {
     cleaningStartTime = millis();
-    lastProgressUpdate = cleaningStartTime;
+    isDoneDelay = false;
 
     if (relay)
     {
@@ -44,6 +44,15 @@ void CleaningMode::start(RelayManager *relay, DisplayManager *display, Bluetooth
 
 bool CleaningMode::update(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
 {
+    if (isDoneDelay)
+    {
+        if (millis() - cleaningDoneTime >= 3000)
+        {
+            return true;
+        }
+        return false;
+    }
+
     unsigned long now = millis();
     unsigned long elapsed = now - cleaningStartTime;
 
@@ -54,7 +63,7 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
             relay->stopAll();
         }
 
-        DEBUG_PRINTLN(F("[CleaningMode] Finished successfully"));
+        DEBUG_PRINTLN(F("[CleaningMode] Finished successfully, waiting 3s"));
 
         if (ble)
         {
@@ -67,7 +76,10 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
         {
             display->showCleaningComplete();
         }
-        return true; // finished
+        
+        isDoneDelay = true;
+        cleaningDoneTime = millis();
+        return false; // wait for delay
     }
 
     uint8_t remainingSeconds = (CLEANING_DURATION_MS - elapsed + 999) / 1000;
@@ -76,16 +88,6 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
     if (display)
     {
         display->showCleaningProgress(remainingSeconds, progress);
-    }
-
-    // Send Bluetooth progress update every second
-    if (ble && (now - lastProgressUpdate >= 1000))
-    {
-        lastProgressUpdate = now;
-        JsonDocument doc;
-        doc["remainingSeconds"] = remainingSeconds;
-        doc["progress"] = progress;
-        ble->sendJSON("CLEANING_PROGRESS", doc);
     }
 
     return false; // still running

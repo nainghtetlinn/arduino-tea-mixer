@@ -74,14 +74,14 @@ void ButtonManager::attachPressCallback(ButtonPressCallback pressCb)
     btnPressCb = pressCb;
 }
 
-void ButtonManager::attachComboCallback(ButtonComboCallback comboCallback)
+void ButtonManager::attachCleaningComboCallback(ButtonComboCallback comboCallback)
 {
     combo13Cb = comboCallback;
 }
 
-void ButtonManager::attachCalibrationComboCallback(ButtonComboCallback calComboCallback)
+void ButtonManager::attachCalibrationComboCallback(ButtonComboCallback comboCallback)
 {
-    combo12Cb = calComboCallback;
+    combo12Cb = comboCallback;
 }
 
 void ButtonManager::update()
@@ -249,10 +249,8 @@ JsonDocument ButtonManager::getButtonsInfoJSON()
         char btnKey[8];
         snprintf(btnKey, sizeof(btnKey), "btn%d", i);
 
-        JsonObject obj;
+        JsonObject obj = doc[btnKey].to<JsonObject>();
         info.toJson(obj);
-
-        doc[btnKey] = obj;
     }
 
     return doc;

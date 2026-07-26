@@ -48,6 +48,9 @@ public:
     TeaState getState() const;
     uint8_t getProgress() const;
 
+    // BLE connected screen overlay (3-second transient display)
+    void showBleConnected();
+
 private:
     RelayManager *relayMgr;
     SensorManager *sensorMgr;
@@ -60,8 +63,9 @@ private:
     TeaState currentState;
     uint8_t currentProgress;
     unsigned long lastUpdate;
-    unsigned long lastFinished;
+    float finishedWeight;
     bool weightDispensingMode;
+    unsigned long bleConnectedUntil;
 
     void loadDispensingMode();
     void saveDispensingMode(bool isWeight);
