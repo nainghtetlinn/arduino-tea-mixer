@@ -18,6 +18,7 @@ public:
 
 private:
     unsigned long cleaningStartTime;
+    unsigned long lastProgressUpdate;
     bool isDoneDelay;
     unsigned long cleaningDoneTime;
 };

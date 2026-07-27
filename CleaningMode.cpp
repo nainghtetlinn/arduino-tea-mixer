@@ -7,6 +7,7 @@
 namespace
 {
     constexpr unsigned long CLEANING_DURATION_MS = 20000;
+    constexpr unsigned long COMPLETE_DISPLAY_MS = 3000;
 } // anonymous namespace
 
 // =========================================================================
@@ -16,6 +17,7 @@ namespace
 void CleaningMode::start(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
 {
     cleaningStartTime = millis();
+    lastProgressUpdate = cleaningStartTime;
     isDoneDelay = false;
 
     if (relay)
@@ -26,13 +28,13 @@ void CleaningMode::start(RelayManager *relay, DisplayManager *display, Bluetooth
         }
     }
 
-    DEBUG_PRINTLN(F("[CleaningMode] Started — 4 pumps ON for 20s"));
+    DEBUG_PRINTLN(F("[CleaningMode] Started."));
 
     if (ble)
     {
         JsonDocument doc;
         doc["state"] = "CLEANING";
-        doc["durationSeconds"] = 20;
+        doc["durationSeconds"] = CLEANING_DURATION_MS / 1000;
         ble->sendJSON("CLEANING_START", doc);
     }
 
@@ -46,7 +48,7 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
 {
     if (isDoneDelay)
     {
-        if (millis() - cleaningDoneTime >= 3000)
+        if (millis() - cleaningDoneTime >= COMPLETE_DISPLAY_MS)
         {
             return true;
         }
@@ -63,7 +65,7 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
             relay->stopAll();
         }
 
-        DEBUG_PRINTLN(F("[CleaningMode] Finished successfully, waiting 3s"));
+        DEBUG_PRINTLN(F("[CleaningMode] Finished successfully."));
 
         if (ble)
         {
@@ -76,7 +78,7 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
         {
             display->showCleaningComplete();
         }
-        
+
         isDoneDelay = true;
         cleaningDoneTime = millis();
         return false; // wait for delay
@@ -88,6 +90,15 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
     if (display)
     {
         display->showCleaningProgress(remainingSeconds, progress);
+    }
+
+    if (ble && (now - lastProgressUpdate >= 1000))
+    {
+        lastProgressUpdate = now;
+        JsonDocument doc;
+        doc["remainingSeconds"] = remainingSeconds;
+        doc["progress"] = progress;
+        ble->sendJSON("CLEANING_PROGRESS", doc);
     }
 
     return false; // still running
