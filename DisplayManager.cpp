@@ -90,7 +90,7 @@ namespace
     };
 
     // --- Small 8x8 Bluetooth icon (connected) ---
-    const unsigned char btIconConnected[] PROGMEM = {
+    const unsigned char btIcon[] PROGMEM = {
         0x08, //     #
         0x0C, //     ##
         0x2A, //   # # #
@@ -107,11 +107,11 @@ namespace
         0x09, 0xE0, 0x05, 0xC0, 0x03, 0x80, 0x01, 0x00,
         0x03, 0x80, 0x05, 0xC0, 0x09, 0xE0, 0x01, 0xC0,
         0x01, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
-} // anonymous namespace
+}
 
 DisplayManager::DisplayManager()
     : display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN),
-      displayReady(false)
+      ready(false)
 {
 }
 
@@ -125,7 +125,7 @@ bool DisplayManager::begin()
         return false;
     }
 
-    displayReady = true;
+    ready = true;
     DEBUG_PRINTLN(F("[DisplayManager] Initialized successfully."));
 
     // Show a simple splash until first real update
@@ -139,11 +139,8 @@ bool DisplayManager::begin()
     return true;
 }
 
-// =========================================================================
-// Idle Screen — Beautiful layout with tea icon header + 3 button names
-// =========================================================================
-//
-// Layout (128x64):
+// ========== Screens ==========
+
 //  ┌────────────────────────────┐
 //  │        ☕ Tea Mixer      📶 │  y=2..10   Icons + Title (size 1)
 //  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤  y=14      Dotted divider
@@ -151,62 +148,54 @@ bool DisplayManager::begin()
 //  │  ▸ Cho Saint               │  y=35
 //  │  ▸ Kya Saint               │  y=49
 //  └────────────────────────────┘
-//
-void DisplayManager::showIdle(const String &btn1, const String &btn2, const String &btn3, bool bleConnected)
+void DisplayManager::showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected)
 {
-    if (!displayReady)
+    if (!ready)
         return;
 
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
 
-    // --- Header: Tea Icon + "Tea Mixer" + BT status icon ---
-    const char title[] = "Tea Mixer";
+    constexpr char title[] = "Tea Mixer";
     constexpr int iconWidth = 8;
     constexpr int iconHeight = 8;
     constexpr int gap = 4;
-    int titleWidth = strlen(title) * 6; // 6px per char at size 1
-    int totalWidth = iconWidth + gap + titleWidth;
-    int startX = (SCREEN_WIDTH - totalWidth) / 2;
-    int headerY = 2;
 
-    // Draw small tea icon on left
+    constexpr int titleWidth = (sizeof(title) - 1) * 6;
+    constexpr int totalWidth = iconWidth + gap + titleWidth;
+    constexpr int startX = (SCREEN_WIDTH - totalWidth) / 2;
+    constexpr int headerY = 2;
+
     display.drawBitmap(startX, headerY, smallTeaIcon, iconWidth, iconHeight, SSD1306_WHITE);
 
-    // Draw "Tea Mixer" text
     display.setTextSize(1);
     display.setCursor(startX + iconWidth + gap, headerY);
     display.print(title);
 
-    // Draw BT icon at the right edge when connected
     if (bleConnected)
     {
-        display.drawBitmap(SCREEN_WIDTH - iconWidth - 4, headerY, btIconConnected, iconWidth, iconHeight, SSD1306_WHITE);
+        display.drawBitmap(SCREEN_WIDTH - iconWidth - 4, headerY, btIcon, iconWidth, iconHeight, SSD1306_WHITE);
     }
 
-    // Dotted divider under title — elegant dashed line
     for (int x = 4; x < SCREEN_WIDTH - 4; x += 3)
     {
         display.drawPixel(x, 14, SSD1306_WHITE);
     }
 
-    // --- Button List ---
     const String *names[] = {&btn1, &btn2, &btn3};
-    const int startY = 21;
-    const int rowHeight = 14;
+    constexpr int startY = 21;
+    constexpr int rowHeight = 14;
 
     for (int i = 0; i < 3; i++)
     {
-        int y = startY + i * rowHeight;
+        const int y = startY + i * rowHeight;
+        constexpr int triX = 8;
+        const int triY = y + 1;
 
-        // Triangle bullet: ▸
-        int triX = 8;
-        int triY = y + 1;
         display.drawLine(triX, triY, triX, triY + 4, SSD1306_WHITE);
         display.drawLine(triX + 1, triY + 1, triX + 1, triY + 3, SSD1306_WHITE);
         display.drawPixel(triX + 2, triY + 2, SSD1306_WHITE);
 
-        // Button name
         display.setCursor(16, y);
         display.print(*names[i]);
     }
@@ -214,42 +203,35 @@ void DisplayManager::showIdle(const String &btn1, const String &btn2, const Stri
     display.display();
 }
 
-// =========================================================================
-// Recipe Preview Screen — Shows recipe details before brewing
-// =========================================================================
-//
-// Layout (128x64):
-//  ┌────────────────────────────┐
-//  │        ▸ Pon Hman          │  y=0..15   Name (size 1, centered)
-//  ├────────────────────────────┤  y=16      Divider
-//  │  Tea ............... 240ml │  y=19
-//  │  Condensed .......... 30ml │  y=28
-//  │  Evaporated ......... 30ml │  y=37
-//  │  Milk ................ 0ml │  y=46
-//  ├────────────────────────────┤  y=54      Divider
-//  │   Press again to brew ☕    │  y=56      Footer prompt
-//  └────────────────────────────┘
-//
-void DisplayManager::showRecipePreview(const String &name, const TeaRecipe &recipe)
+//  ╭────────────────────────────╮
+//  │        ▸ Pon Hman          │  y=0..13   Header box (128x14 rounded rect, text y=4)
+//  ╰────────────────────────────╯
+//  │  Tea ............... 240ml │  y=18      Detail Row 1 (dotted line at y=21)
+//  │  Condensed .......... 30ml │  y=27      Detail Row 2 (dotted line at y=30)
+//  │  Evaporated ......... 30ml │  y=36      Detail Row 3 (dotted line at y=39)
+//  │  Milk ................ 0ml │  y=45      Detail Row 4 (dotted line at y=48)
+//  ├────────────────────────────┤  y=54      Footer divider line
+//  │    Press again to brew     │  y=56      Footer text (centered)
+//  └────────────────────────────┘  y=63      Screen bottom
+void DisplayManager::showRecipePreviewScreen(const String &name, const TeaRecipe &recipe)
 {
-    if (!displayReady)
+    if (!ready)
         return;
 
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
-
-    // --- Header: Recipe name centered ---
     display.setTextSize(1);
 
-    // Calculate centered position for "▸ Name"
-    int nameLen = name.length() + 2; // "▸ " prefix
+    const int nameLen = name.length() + 2;
     int nameX = (SCREEN_WIDTH - (nameLen * 6)) / 2;
     if (nameX < 2)
+    {
         nameX = 2;
+    }
 
-    // Triangle bullet
-    int triX = nameX;
-    int triY = 5;
+    const int triX = nameX;
+    constexpr int triY = 5;
+
     display.drawLine(triX, triY, triX, triY + 4, SSD1306_WHITE);
     display.drawLine(triX + 1, triY + 1, triX + 1, triY + 3, SSD1306_WHITE);
     display.drawPixel(triX + 2, triY + 2, SSD1306_WHITE);
@@ -257,144 +239,100 @@ void DisplayManager::showRecipePreview(const String &name, const TeaRecipe &reci
     display.setCursor(nameX + 6, 4);
     display.print(name);
 
-    // Decorative border around header
     display.drawRoundRect(0, 0, SCREEN_WIDTH, 14, 2, SSD1306_WHITE);
 
-    // --- Recipe Details ---
-    const char *labels[] = {"Tea", "Condensed", "Evaporated", "Milk"};
+    constexpr const char *labels[] = {"Tea", "Condensed", "Evaporated", "Milk"};
     const int values[] = {recipe.tea, recipe.condensedMilk, recipe.evaporatedMilk, recipe.milk};
 
-    int detailStartY = 18;
-    int rowH = 9;
+    constexpr int detailStartY = 18;
+    constexpr int rowH = 9;
 
     for (int i = 0; i < 4; i++)
     {
-        int y = detailStartY + i * rowH;
+        const int y = detailStartY + i * rowH;
 
         display.setCursor(6, y);
         display.print(labels[i]);
 
-        // Right-aligned value with "ml" suffix
         char valBuf[10];
         snprintf(valBuf, sizeof(valBuf), "%dml", values[i]);
-        int valWidth = strlen(valBuf) * 6;
+        const int valWidth = strlen(valBuf) * 6;
+
         display.setCursor(SCREEN_WIDTH - valWidth - 6, y);
         display.print(valBuf);
 
-        // Dotted leader line between label and value
-        int labelEnd = 6 + strlen(labels[i]) * 6 + 4;
-        int valStart = SCREEN_WIDTH - valWidth - 6 - 4;
+        const int labelEnd = 6 + strlen(labels[i]) * 6 + 4;
+        const int valStart = SCREEN_WIDTH - valWidth - 6 - 4;
+
         for (int dx = labelEnd; dx < valStart; dx += 3)
         {
             display.drawPixel(dx, y + 3, SSD1306_WHITE);
         }
     }
 
-    // --- Footer ---
     display.drawFastHLine(0, 54, SCREEN_WIDTH, SSD1306_WHITE);
 
-    // Static footer: "Press again to brew" (Centered without icon)
-    const char footerText[] = "Press again to brew";
-    constexpr int footerLen = 19;          // strlen("Press again to brew")
-    constexpr int footerW = footerLen * 6; // width of text only
-    constexpr int footerX = (SCREEN_WIDTH - footerW) / 2;
+    constexpr char footerText[] = "Press again to brew";
+    constexpr int footerWidth = (sizeof(footerText) - 1) * 6;
+    constexpr int footerX = (SCREEN_WIDTH - footerWidth) / 2;
 
     display.setCursor(footerX, 56);
-    display.print(F("Press again to brew"));
+    display.print(footerText);
 
     display.display();
 }
 
-void DisplayManager::showReady()
+//  ┌────────────────────────────┐
+//  │                            │  y=0..4    Empty space
+//  │           [ ☕ ]            │  y=5       Animated Tea Icon (Assumes 24x24)
+//  │                            │  y=29..34  Gap (6px)
+//  │   ╭────────────────────╮   │  y=35      Progress bar top (100x9 rounded rect)
+//  │   │███████████         │   │  y=37      Progress bar fill (1px internal padding)
+//  │   ╰────────────────────╯   │  y=43      Progress bar bottom
+//  │                            │  y=44..49  Gap (6px)
+//  │       Brewing... 45%       │  y=50      Text (dynamic width, centered)
+//  │                            │  y=58..63  Empty space
+//  └────────────────────────────┘
+void DisplayManager::showTeaProgressScreen(uint8_t progress)
 {
-    if (!displayReady)
-        return;
-
-    display.clearDisplay();
-
-    // -- LAYOUT MATH (Centering the two remaining elements) --
-    constexpr int badgeW = 112;
-    constexpr int badgeH = 17;
-    constexpr int textHeight = 8;
-    constexpr int gap = 8; // Slightly larger gap for a balanced two-element layout
-
-    // Total height of the remaining elements combined
-    constexpr int totalHeight = badgeH + gap + textHeight;
-
-    // Calculate starting Y to perfectly center the entire block
-    constexpr int badgeY = (SCREEN_HEIGHT - totalHeight) / 2;
-    constexpr int textY = badgeY + badgeH + gap;
-
-    // 1. Highlighted Badge (Now the Top Element)
-    constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
-
-    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
-
-    // Text inside badge
-    const char msg[] = "TEA IS READY!";
-    int msgWidth = strlen(msg) * 6;
-    int msgX = (SCREEN_WIDTH - msgWidth) / 2;
-
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
-    display.setCursor(msgX, badgeY + 5);
-    display.print(msg);
-
-    // 2. Footer Text (Bottom Element)
-    const char footer[] = "Remove cup & enjoy!";
-    int footerWidth = strlen(footer) * 6;
-    int footerX = (SCREEN_WIDTH - footerWidth) / 2;
-
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(footerX, textY);
-    display.print(footer);
-
-    display.display();
-}
-
-void DisplayManager::showProgress(uint8_t progress)
-{
-    if (!displayReady)
+    if (!ready)
         return;
 
     progress = constrain(progress, 0, 100);
     display.clearDisplay();
 
-    // -- LAYOUT MATH (Centering the whole block) --
     constexpr int barHeight = 9;
     constexpr int textHeight = 8;
-    constexpr int gap = 6; // Visually pleasing gap between elements
-
-    // Total height of all elements combined
+    constexpr int gap = 6;
     constexpr int totalHeight = ICON_HEIGHT + gap + barHeight + gap + textHeight;
 
-    // Calculate starting Y to perfectly center the entire block on the screen
     constexpr int iconY = (SCREEN_HEIGHT - totalHeight) / 2;
     constexpr int barY = iconY + ICON_HEIGHT + gap;
     constexpr int textY = barY + barHeight + gap;
 
-    // 1. Icon (Top Element)
     constexpr int iconX = (SCREEN_WIDTH - ICON_WIDTH) / 2;
     const bool useFrame1 = ((millis() / ANIMATION_SPEED_MS) % 2 == 0);
     const unsigned char *icon = useFrame1 ? teaIconFrame1 : teaIconFrame2;
+
     display.drawBitmap(iconX, iconY, icon, ICON_WIDTH, ICON_HEIGHT, SSD1306_WHITE);
 
-    // 2. Sleeker Progress Bar (Middle Element)
     constexpr int barX = 14;
     constexpr int barWidth = 100;
+    constexpr int fillMax = barWidth - 4;
 
     display.drawRoundRect(barX, barY, barWidth, barHeight, 3, SSD1306_WHITE);
 
-    const int fillWidth = map(progress, 0, 100, 0, barWidth - 4);
+    const int fillWidth = (progress * fillMax) / 100;
+
     if (fillWidth > 0)
     {
         display.fillRoundRect(barX + 2, barY + 2, fillWidth, barHeight - 4, 1, SSD1306_WHITE);
     }
 
-    // 3. Text (Bottom Element)
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
 
+    // 12 represents: "Brewing... " (11 chars) + "%" (1 char)
     const uint8_t charCount = 12 + (progress >= 100 ? 3 : (progress >= 10 ? 2 : 1));
     const uint8_t textX = (SCREEN_WIDTH - (charCount * 6)) / 2;
 
@@ -406,61 +344,117 @@ void DisplayManager::showProgress(uint8_t progress)
     display.display();
 }
 
-void DisplayManager::showCleaningProgress(uint8_t remainingSeconds, uint8_t progress)
+//  ┌────────────────────────────┐
+//  │                            │  y=0..14   Empty space
+//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=15      Badge top (112x17 rounded rect)
+//  │  █    TEA IS READY!     █  │  y=20      Inverted text (centered)
+//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=31      Badge bottom
+//  │                            │  y=32..39  Gap (8px)
+//  │    Remove cup & enjoy!     │  y=40      Footer text
+//  │                            │  y=48..63  Empty space
+//  └────────────────────────────┘
+void DisplayManager::showTeaReadyScreen()
 {
-    if (!displayReady)
+    if (!ready)
+        return;
+
+    display.clearDisplay();
+
+    constexpr int badgeW = 112;
+    constexpr int badgeH = 17;
+    constexpr int textHeight = 8;
+    constexpr int gap = 8;
+    constexpr int totalHeight = badgeH + gap + textHeight;
+
+    constexpr int badgeY = (SCREEN_HEIGHT - totalHeight) / 2;
+    constexpr int textY = badgeY + badgeH + gap;
+    constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
+
+    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
+
+    constexpr char msg[] = "TEA IS READY!";
+    constexpr int msgWidth = (sizeof(msg) - 1) * 6;
+    constexpr int msgX = (SCREEN_WIDTH - msgWidth) / 2;
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.setCursor(msgX, badgeY + 5);
+    display.print(msg);
+
+    constexpr char footerText[] = "Remove cup & enjoy!";
+    constexpr int footerWidth = (sizeof(footerText) - 1) * 6;
+    constexpr int footerX = (SCREEN_WIDTH - footerWidth) / 2;
+
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(footerX, textY);
+    display.print(footerText);
+
+    display.display();
+}
+
+//  ┌────────────────────────────┐
+//  │                            │  y=0..9    Empty space
+//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=10      Badge top (112x15 rounded rect)
+//  │  █    CLEANING MODE     █  │  y=14      Inverted text (centered)
+//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=24      Badge bottom
+//  │                            │  y=25..30  Gap (6px)
+//  │   ╭────────────────────╮   │  y=31      Progress bar top (100x9 rounded rect)
+//  │   │███████████         │   │  y=33      Progress bar fill (1px internal padding)
+//  │   ╰────────────────────╯   │  y=39      Progress bar bottom
+//  │                            │  y=40..45  Gap (6px)
+//  │   Flushing lines... 10s    │  y=46      Combined text (dynamic width, centered)
+//  │                            │  y=54..63  Empty space
+//  └────────────────────────────┘
+void DisplayManager::showCleaningProgressScreen(uint8_t remainingSeconds, uint8_t progress)
+{
+    if (!ready)
         return;
 
     progress = constrain(progress, 0, 100);
     display.clearDisplay();
 
-    // -- LAYOUT MATH (Centering the 3-element block) --
     constexpr int badgeW = 112;
     constexpr int badgeH = 15;
     constexpr int barWidth = 100;
-    constexpr int barHeight = 9; // Sleek progress bar
+    constexpr int barHeight = 9;
     constexpr int textHeight = 8;
-    constexpr int gap = 6; // Standard 6px gap
+    constexpr int gap = 6;
 
-    // Total height: Badge + gap + Bar + gap + Combined Text
     constexpr int totalHeight = badgeH + gap + barHeight + gap + textHeight;
-
-    // Calculate starting Y coordinates to perfectly center the entire block
     constexpr int badgeY = (SCREEN_HEIGHT - totalHeight) / 2;
     constexpr int barY = badgeY + badgeH + gap;
     constexpr int textY = barY + barHeight + gap;
 
-    // 1. Header Badge: "CLEANING MODE"
     constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
     display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 3, SSD1306_WHITE);
 
-    const char title[] = "CLEANING MODE";
-    int titleWidth = strlen(title) * 6;
-    int titleX = (SCREEN_WIDTH - titleWidth) / 2;
+    constexpr char title[] = "CLEANING MODE";
+    constexpr int titleWidth = (sizeof(title) - 1) * 6;
+    constexpr int titleX = (SCREEN_WIDTH - titleWidth) / 2;
 
     display.setTextSize(1);
     display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
     display.setCursor(titleX, badgeY + 4);
     display.print(title);
 
-    // 2. Sleeker Progress Bar
     constexpr int barX = (SCREEN_WIDTH - barWidth) / 2;
+    constexpr int fillMax = barWidth - 4;
+
     display.drawRoundRect(barX, barY, barWidth, barHeight, 3, SSD1306_WHITE);
 
-    const int fillWidth = map(progress, 0, 100, 0, barWidth - 4);
+    const int fillWidth = (progress * fillMax) / 100;
+
     if (fillWidth > 0)
     {
-        // 1px inner radius for the fill
         display.fillRoundRect(barX + 2, barY + 2, fillWidth, barHeight - 4, 1, SSD1306_WHITE);
     }
 
-    // 3. Combined Text (Bottom Element)
     char txtBuf[32];
-    // Formats into something like: "Flushing lines... 10s"
     snprintf(txtBuf, sizeof(txtBuf), "Flushing lines... %ds", remainingSeconds);
 
-    int txtWidth = strlen(txtBuf) * 6;
-    int txtX = (SCREEN_WIDTH - txtWidth) / 2;
+    // Must use strlen() here because the buffer content length changes at runtime
+    const int txtWidth = strlen(txtBuf) * 6;
+    const int txtX = (SCREEN_WIDTH - txtWidth) / 2;
 
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(txtX, textY);
@@ -469,43 +463,46 @@ void DisplayManager::showCleaningProgress(uint8_t remainingSeconds, uint8_t prog
     display.display();
 }
 
-void DisplayManager::showCleaningComplete()
+//  ┌────────────────────────────┐
+//  │                            │  y=0..14   Empty space
+//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=15      Badge top (112x17 rounded rect)
+//  │  █    CLEAN COMPLETE    █  │  y=20      Inverted text (centered)
+//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=31      Badge bottom
+//  │                            │  y=32..39  Gap (8px)
+//  │    Lines flushed clear!    │  y=40      Subtext (centered)
+//  │                            │  y=48..63  Empty space
+//  └────────────────────────────┘
+void DisplayManager::showCleaningCompleteScreen()
 {
-    if (!displayReady)
+    if (!ready)
         return;
 
     display.clearDisplay();
 
-    // -- LAYOUT MATH (Centering the two remaining elements) --
     constexpr int badgeW = 112;
     constexpr int badgeH = 17;
     constexpr int textHeight = 8;
-    constexpr int gap = 8; // Slightly larger gap for a balanced two-element layout
-
-    // Total height of the remaining elements combined
+    constexpr int gap = 8;
     constexpr int totalHeight = badgeH + gap + textHeight;
 
-    // Calculate starting Y coordinates to perfectly center the entire block
     constexpr int badgeY = (SCREEN_HEIGHT - totalHeight) / 2;
     constexpr int textY = badgeY + badgeH + gap;
-
-    // 1. Highlighted badge (Now the Top Element)
     constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
+
     display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
 
-    const char msg[] = "CLEAN COMPLETE";
-    int msgWidth = strlen(msg) * 6;
-    int msgX = (SCREEN_WIDTH - msgWidth) / 2;
+    constexpr char msg[] = "CLEAN COMPLETE";
+    constexpr int msgWidth = (sizeof(msg) - 1) * 6;
+    constexpr int msgX = (SCREEN_WIDTH - msgWidth) / 2;
 
     display.setTextSize(1);
     display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
     display.setCursor(msgX, badgeY + 5);
     display.print(msg);
 
-    // 2. Subtext (Bottom Element)
-    const char sub[] = "Lines flushed clear!";
-    int subWidth = strlen(sub) * 6;
-    int subX = (SCREEN_WIDTH - subWidth) / 2;
+    constexpr char sub[] = "Lines flushed clear!";
+    constexpr int subWidth = (sizeof(sub) - 1) * 6;
+    constexpr int subX = (SCREEN_WIDTH - subWidth) / 2;
 
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(subX, textY);
@@ -514,27 +511,34 @@ void DisplayManager::showCleaningComplete()
     display.display();
 }
 
-void DisplayManager::showCalibration(float temperature, float weight, bool weightMode)
+//  ╭────────────────────────────╮
+//  │     ▸ CALIBRATION MODE     │  y=0..13   Header box (128x14 rounded rect, text y=4)
+//  ╰────────────────────────────╯
+//  │  Temp: ............ 95.0 C │  y=16      Temp row (dotted line at y=19)
+//  │  Weight: .......... 25.5 g │  y=26      Weight row (dotted line at y=29)
+//  │  Mode: ............ WEIGHT │  y=36      Mode row (dotted line at y=39)
+//  ├────────────────────────────┤  y=46      Footer divider line
+//  │    B1:Tare  |  B2:Mode     │  y=48      Footer 1 text (centered)
+//  │     Hold B1+2 to Exit      │  y=56      Footer 2 text (centered)
+//  └────────────────────────────┘  y=63      Screen bottom
+void DisplayManager::showCalibrationScreen(float temperature, float weight, bool weightMode)
 {
-    if (!displayReady)
+    if (!ready)
         return;
 
     display.clearDisplay();
-
-    // 1. Header: "CALIBRATION MODE" centered with bullet and border
-    const char title[] = "CALIBRATION MODE";
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
 
-    // Calculate centered position for "▸ CALIBRATION MODE"
-    int titleLen = strlen(title) + 2; // "▸ " prefix
-    int titleX = (SCREEN_WIDTH - (titleLen * 6)) / 2;
-    if (titleX < 2)
-        titleX = 2;
+    // --- Header ---
+    constexpr char title[] = "CALIBRATION MODE";
+    constexpr int titleLen = (sizeof(title) - 1) + 2; // +2 for the "▸ " prefix
+    constexpr int calcTitleX = (SCREEN_WIDTH - (titleLen * 6)) / 2;
+    constexpr int titleX = (calcTitleX < 2) ? 2 : calcTitleX;
 
-    // Triangle bullet
-    int triX = titleX;
-    int triY = 5;
+    constexpr int triX = titleX;
+    constexpr int triY = 5;
+
     display.drawLine(triX, triY, triX, triY + 4, SSD1306_WHITE);
     display.drawLine(triX + 1, triY + 1, triX + 1, triY + 3, SSD1306_WHITE);
     display.drawPixel(triX + 2, triY + 2, SSD1306_WHITE);
@@ -542,17 +546,17 @@ void DisplayManager::showCalibration(float temperature, float weight, bool weigh
     display.setCursor(titleX + 6, 4);
     display.print(title);
 
-    // Decorative border around header
     display.drawRoundRect(0, 0, SCREEN_WIDTH, 14, 2, SSD1306_WHITE);
 
-    // 2. Temperature Row
-    display.setTextColor(SSD1306_WHITE);
+    // --- Temperature Row ---
     display.setCursor(8, 16);
     display.print(F("Temp:"));
 
     char tempBuf[16];
     snprintf(tempBuf, sizeof(tempBuf), "%.1f C", temperature);
-    int tempWidth = strlen(tempBuf) * 6;
+
+    // Must use strlen() here because snprintf output length is dynamic
+    const int tempWidth = strlen(tempBuf) * 6;
     display.setCursor(SCREEN_WIDTH - tempWidth - 8, 16);
     display.print(tempBuf);
 
@@ -561,13 +565,14 @@ void DisplayManager::showCalibration(float temperature, float weight, bool weigh
         display.drawPixel(x, 19, SSD1306_WHITE);
     }
 
-    // 3. Weight Row
+    // --- Weight Row ---
     display.setCursor(8, 26);
     display.print(F("Weight:"));
 
     char weightBuf[16];
     snprintf(weightBuf, sizeof(weightBuf), "%.1f g", weight);
-    int weightWidth = strlen(weightBuf) * 6;
+    const int weightWidth = strlen(weightBuf) * 6;
+
     display.setCursor(SCREEN_WIDTH - weightWidth - 8, 26);
     display.print(weightBuf);
 
@@ -576,12 +581,13 @@ void DisplayManager::showCalibration(float temperature, float weight, bool weigh
         display.drawPixel(x, 29, SSD1306_WHITE);
     }
 
-    // 4. Dispensing Mode Row (WEIGHT vs TIME)
+    // --- Dispensing Mode Row ---
     display.setCursor(8, 36);
     display.print(F("Mode:"));
 
     const char *modeStr = weightMode ? "WEIGHT" : "TIME";
-    int modeWidth = strlen(modeStr) * 6;
+    const int modeWidth = (weightMode ? 6 : 4) * 6;
+
     display.setCursor(SCREEN_WIDTH - modeWidth - 8, 36);
     display.print(modeStr);
 
@@ -590,66 +596,59 @@ void DisplayManager::showCalibration(float temperature, float weight, bool weigh
         display.drawPixel(x, 39, SSD1306_WHITE);
     }
 
-    // 5. Footer Helper Lines
+    // --- Footer ---
     display.drawFastHLine(0, 46, SCREEN_WIDTH, SSD1306_WHITE);
 
-    const char footer1[] = "B1:Tare  |  B2:Mode";
-    int f1Width = strlen(footer1) * 6;
-    display.setCursor((SCREEN_WIDTH - f1Width) / 2, 48);
+    constexpr char footer1[] = "B1:Tare  |  B2:Mode";
+    constexpr int f1Width = (sizeof(footer1) - 1) * 6;
+    constexpr int f1X = (SCREEN_WIDTH - f1Width) / 2;
+
+    display.setCursor(f1X, 48);
     display.print(footer1);
 
-    const char footer2[] = "Hold B1+2 to Exit";
-    int f2Width = strlen(footer2) * 6;
-    display.setCursor((SCREEN_WIDTH - f2Width) / 2, 56);
+    constexpr char footer2[] = "Hold B1+2 to Exit";
+    constexpr int f2Width = (sizeof(footer2) - 1) * 6;
+    constexpr int f2X = (SCREEN_WIDTH - f2Width) / 2;
+
+    display.setCursor(f2X, 56);
     display.print(footer2);
 
     display.display();
 }
 
-// =========================================================================
-// BLE Connected Screen — Minimalist notification
-// =========================================================================
-//
-// Layout (128x64):
 //  ┌────────────────────────────┐
 //  │                            │
 //  │        [ BT icon ]         │  y=10..26  Centered BT icon
 //  │                            │
-//  │        Connected           │  y=34      Text size 2, centered
+//  │        Connected!          │  y=34      Text size 2, centered
 //  │                            │
 //  └────────────────────────────┘
-//
-void DisplayManager::showConnected()
+void DisplayManager::showBleConnectedScreen()
 {
-    if (!displayReady)
+    if (!ready)
         return;
 
     display.clearDisplay();
 
-    // -- LAYOUT MATH (Centering the 2-element block) --
     constexpr int iconW = 16;
     constexpr int iconH = 16;
     constexpr int textHeight = 8;
-    constexpr int gap = 8; // 8px gap looks great with a 16x16 icon
-
-    // Total height of the elements combined (16 + 8 + 8 = 32px)
+    constexpr int gap = 8;
     constexpr int totalHeight = iconH + gap + textHeight;
 
-    // Calculate starting Y coordinates to perfectly center the entire block
     constexpr int iconY = (SCREEN_HEIGHT - totalHeight) / 2;
     constexpr int textY = iconY + iconH + gap;
-
-    // 1. Bluetooth icon (Top Element)
     constexpr int iconX = (SCREEN_WIDTH - iconW) / 2;
+
     display.drawBitmap(iconX, iconY, bluetooth_icon, iconW, iconH, SSD1306_WHITE);
 
-    // 2. "Connected!" text (Bottom Element - Size 1)
-    const char msg[] = "Connected!";
-    int msgWidth = strlen(msg) * 6; // size 1 = 6px per char
+    constexpr char msg[] = "Connected!";
+    constexpr int msgWidth = (sizeof(msg) - 1) * 6;
+    constexpr int msgX = (SCREEN_WIDTH - msgWidth) / 2;
 
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
-    display.setCursor((SCREEN_WIDTH - msgWidth) / 2, textY);
+    display.setCursor(msgX, textY);
     display.print(msg);
 
     display.display();

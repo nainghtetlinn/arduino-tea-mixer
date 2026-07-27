@@ -40,7 +40,7 @@ void CleaningMode::start(RelayManager *relay, DisplayManager *display, Bluetooth
 
     if (display)
     {
-        display->showCleaningProgress(20, 0);
+        display->showCleaningProgressScreen(20, 0);
     }
 }
 
@@ -76,7 +76,7 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
 
         if (display)
         {
-            display->showCleaningComplete();
+            display->showCleaningCompleteScreen();
         }
 
         isDoneDelay = true;
@@ -89,7 +89,7 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
 
     if (display)
     {
-        display->showCleaningProgress(remainingSeconds, progress);
+        display->showCleaningProgressScreen(remainingSeconds, progress);
     }
 
     if (ble && (now - lastProgressUpdate >= 1000))

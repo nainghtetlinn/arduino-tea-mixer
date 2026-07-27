@@ -16,6 +16,8 @@ namespace
 
 } // anonymous namespace
 
+// ===== Lifecycle =====
+
 TeaManager::TeaManager()
     : relayMgr(nullptr),
       sensorMgr(nullptr),
@@ -48,9 +50,7 @@ void TeaManager::begin(RelayManager *relay, SensorManager *sensor, DisplayManage
     loadDispensingMode();
 }
 
-// =========================================================================
-// Main Update Loop
-// =========================================================================
+// ===== Main Update Loop =====
 
 void TeaManager::update()
 {
@@ -80,7 +80,7 @@ void TeaManager::update()
     {
         if (sensorMgr && displayMgr)
         {
-            displayMgr->showCalibration(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+            displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
         }
         return;
     }
@@ -129,9 +129,7 @@ void TeaManager::update()
     updateDisplay();
 }
 
-// =========================================================================
-// Command Handling
-// =========================================================================
+// ===== Tea Dispensing & Brewing =====
 
 void TeaManager::startMakingTea(const TeaRecipe &recipe)
 {
@@ -168,6 +166,56 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
     sendTeaStartJSON();
 }
 
+void TeaManager::finishDispensing()
+{
+    activeStrategy = nullptr;
+
+    // Turn off all relays (safety net)
+    if (relayMgr)
+    {
+        relayMgr->stopAll();
+    }
+
+    currentState = TeaState::FINISHED;
+    currentProgress = 100;
+    finishedWeight = sensorMgr ? sensorMgr->getWeight() : 0.0f;
+
+    DEBUG_PRINTLN(F("[TeaManager] Dispensing complete"));
+
+    sendTeaFinishedJSON();
+}
+
+void TeaManager::calculateProgress()
+{
+    const int totalTarget = target.tea + target.condensedMilk + target.evaporatedMilk + target.milk;
+    const int totalCurrent = dispensed.tea + dispensed.condensedMilk + dispensed.evaporatedMilk + dispensed.milk;
+
+    if (totalTarget <= 0)
+        currentProgress = 0;
+    else
+        currentProgress = constrain((totalCurrent * 100) / totalTarget, 0, 100);
+}
+
+void TeaManager::stopAll()
+{
+    if (activeStrategy)
+    {
+        activeStrategy->stop(relayMgr);
+        activeStrategy = nullptr;
+    }
+    else if (relayMgr)
+    {
+        relayMgr->stopAll();
+    }
+
+    currentState = TeaState::IDLE;
+    currentProgress = 0;
+
+    DEBUG_PRINTLN(F("[TeaManager] Emergency stop"));
+}
+
+// ===== Recipe Preview Flow =====
+
 void TeaManager::previewRecipe(int btnIndex, const ButtonInfo &info)
 {
     previewInfo = info;
@@ -177,7 +225,7 @@ void TeaManager::previewRecipe(int btnIndex, const ButtonInfo &info)
 
     if (displayMgr)
     {
-        displayMgr->showRecipePreview(previewInfo.name, previewInfo.recipe);
+        displayMgr->showRecipePreviewScreen(previewInfo.name, previewInfo.recipe);
     }
 
     DEBUG_PRINTF("[TeaManager] Preview: %s (tea=%d, cm=%d, em=%d, milk=%d)\n",
@@ -213,27 +261,7 @@ int TeaManager::getPreviewButtonIndex() const
     return previewButtonIndex;
 }
 
-void TeaManager::stopAll()
-{
-    if (activeStrategy)
-    {
-        activeStrategy->stop(relayMgr);
-        activeStrategy = nullptr;
-    }
-    else if (relayMgr)
-    {
-        relayMgr->stopAll();
-    }
-
-    currentState = TeaState::IDLE;
-    currentProgress = 0;
-
-    DEBUG_PRINTLN(F("[TeaManager] Emergency stop"));
-}
-
-// =========================================================================
-// Cleaning Mode
-// =========================================================================
+// ===== Cleaning Mode =====
 
 void TeaManager::startCleaningMode()
 {
@@ -256,9 +284,7 @@ void TeaManager::cancelCleaningMode()
     currentState = TeaState::IDLE;
 }
 
-// =========================================================================
-// Calibration Mode
-// =========================================================================
+// ===== Calibration Mode =====
 
 void TeaManager::startCalibrationMode()
 {
@@ -273,7 +299,7 @@ void TeaManager::startCalibrationMode()
 
     if (sensorMgr && displayMgr)
     {
-        displayMgr->showCalibration(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
     }
 }
 
@@ -311,7 +337,7 @@ void TeaManager::toggleDispensingMode()
 
     if (sensorMgr && displayMgr)
     {
-        displayMgr->showCalibration(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
     }
 }
 
@@ -320,9 +346,19 @@ bool TeaManager::isWeightMode() const
     return weightDispensingMode;
 }
 
-// =========================================================================
-// NVS Persistence
-// =========================================================================
+// ===== State Queries =====
+
+TeaState TeaManager::getState() const
+{
+    return currentState;
+}
+
+uint8_t TeaManager::getProgress() const
+{
+    return currentProgress;
+}
+
+// ===== NVS Persistence =====
 
 void TeaManager::loadDispensingMode()
 {
@@ -344,46 +380,7 @@ void TeaManager::saveDispensingMode(bool isWeight)
                  isWeight ? "WEIGHT" : "TIME");
 }
 
-// =========================================================================
-// State Queries
-// =========================================================================
-
-TeaState TeaManager::getState() const
-{
-    return currentState;
-}
-
-uint8_t TeaManager::getProgress() const
-{
-    return currentProgress;
-}
-
-// =========================================================================
-// Common Helpers
-// =========================================================================
-
-void TeaManager::finishDispensing()
-{
-    activeStrategy = nullptr;
-
-    // Turn off all relays (safety net)
-    if (relayMgr)
-    {
-        relayMgr->stopAll();
-    }
-
-    currentState = TeaState::FINISHED;
-    currentProgress = 100;
-    finishedWeight = sensorMgr ? sensorMgr->getWeight() : 0.0f;
-
-    DEBUG_PRINTLN(F("[TeaManager] Dispensing complete"));
-
-    sendTeaFinishedJSON();
-}
-
-// =========================================================================
-// JSON Reporting
-// =========================================================================
+// ===== JSON Reporting =====
 
 void TeaManager::sendTeaStartJSON()
 {
@@ -417,29 +414,16 @@ void TeaManager::sendTeaFinishedJSON()
     }
 }
 
-// =========================================================================
-// BLE Connected Screen Overlay
-// =========================================================================
+// ===== Display & UI Rendering =====
 
 void TeaManager::showBleConnected()
 {
     bleConnectedUntil = millis() + BLE_CONNECTED_DISPLAY_MS;
     if (displayMgr)
     {
-        displayMgr->showConnected();
+        displayMgr->showBleConnectedScreen();
     }
     DEBUG_PRINTLN(F("[TeaManager] Showing BLE connected screen"));
-}
-
-void TeaManager::calculateProgress()
-{
-    const int totalTarget = target.tea + target.condensedMilk + target.evaporatedMilk + target.milk;
-    const int totalCurrent = dispensed.tea + dispensed.condensedMilk + dispensed.evaporatedMilk + dispensed.milk;
-
-    if (totalTarget <= 0)
-        currentProgress = 0;
-    else
-        currentProgress = constrain((totalCurrent * 100) / totalTarget, 0, 100);
 }
 
 void TeaManager::updateDisplay()
@@ -452,7 +436,7 @@ void TeaManager::updateDisplay()
     {
         if (millis() < bleConnectedUntil)
         {
-            displayMgr->showConnected();
+            displayMgr->showBleConnectedScreen();
             return;
         }
         bleConnectedUntil = 0;
@@ -466,17 +450,17 @@ void TeaManager::updateDisplay()
         String n1 = buttonMgr ? buttonMgr->getButtonName(1) : F("---");
         String n2 = buttonMgr ? buttonMgr->getButtonName(2) : F("---");
         bool ble = bleMgr ? bleMgr->isConnected() : false;
-        displayMgr->showIdle(n0, n1, n2, ble);
+        displayMgr->showIdleScreen(n0, n1, n2, ble);
         break;
     }
     case TeaState::PREVIEW:
-        displayMgr->showRecipePreview(previewInfo.name, previewInfo.recipe);
+        displayMgr->showRecipePreviewScreen(previewInfo.name, previewInfo.recipe);
         break;
     case TeaState::MAKING:
-        displayMgr->showProgress(currentProgress);
+        displayMgr->showTeaProgressScreen(currentProgress);
         break;
     case TeaState::FINISHED:
-        displayMgr->showReady();
+        displayMgr->showTeaReadyScreen();
         break;
     case TeaState::CLEANING:
         // Handled dynamically in CleaningMode::update()
@@ -484,7 +468,7 @@ void TeaManager::updateDisplay()
     case TeaState::CALIBRATION:
         if (sensorMgr)
         {
-            displayMgr->showCalibration(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+            displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
         }
         break;
     default:

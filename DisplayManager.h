@@ -10,18 +10,23 @@ class DisplayManager
 public:
     DisplayManager();
     bool begin();
-    void showIdle(const String &btn1, const String &btn2, const String &btn3, bool bleConnected);
-    void showRecipePreview(const String &name, const TeaRecipe &recipe);
-    void showReady();
-    void showProgress(uint8_t progress);
-    void showCleaningProgress(uint8_t remainingSeconds, uint8_t progress);
-    void showCleaningComplete();
-    void showCalibration(float temperature, float weight, bool weightMode);
-    void showConnected();
+
+    void showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected);
+    void showRecipePreviewScreen(const String &name, const TeaRecipe &recipe);
+
+    void showTeaProgressScreen(uint8_t progress);
+    void showTeaReadyScreen();
+
+    void showCleaningProgressScreen(uint8_t remainingSeconds, uint8_t progress);
+    void showCleaningCompleteScreen();
+
+    void showCalibrationScreen(float temperature, float weight, bool weightMode);
+
+    void showBleConnectedScreen();
 
 private:
     Adafruit_SSD1306 display;
-    bool displayReady;
+    bool ready;
 };
 
 #endif
