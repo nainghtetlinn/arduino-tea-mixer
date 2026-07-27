@@ -95,6 +95,7 @@ void TeaManager::update()
                 currentState = TeaState::IDLE;
                 currentProgress = 0;
                 DEBUG_PRINTLN(F("[TeaManager] Cup removed — returning to idle"));
+                sendCupRemovedJSON();
             }
         }
         return;
@@ -411,6 +412,15 @@ void TeaManager::sendTeaFinishedJSON()
     {
         JsonDocument emptyPayload;
         bleMgr->sendJSON("TEA_FINISH", emptyPayload);
+    }
+}
+
+void TeaManager::sendCupRemovedJSON()
+{
+    if (bleMgr)
+    {
+        JsonDocument emptyPayload;
+        bleMgr->sendJSON("CUP_REMOVED", emptyPayload);
     }
 }
 

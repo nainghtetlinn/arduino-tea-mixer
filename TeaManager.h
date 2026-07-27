@@ -89,6 +89,7 @@ private:
     void sendTeaStartJSON();
     void sendTeaProgressJSON();
     void sendTeaFinishedJSON();
+    void sendCupRemovedJSON();
     void calculateProgress();
     void updateDisplay();
 };
