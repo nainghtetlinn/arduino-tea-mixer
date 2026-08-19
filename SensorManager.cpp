@@ -14,7 +14,7 @@ namespace
     constexpr unsigned long SENSOR_UPDATE_INTERVAL_MS = 500;
 
     // Default
-    constexpr float DEFAULT_CALIBRATION_FACTOR = 886.47f;
+    constexpr float DEFAULT_CALIBRATION_FACTOR = 582.5f;
 } // anonymous namespace
 
 SensorManager::SensorManager()

@@ -4,10 +4,10 @@
 namespace
 {
     // --- Pins ---
-    constexpr uint8_t PIN_RELAY_TEA = 16;
-    constexpr uint8_t PIN_RELAY_CONDENSED_MILK = 17;
-    constexpr uint8_t PIN_RELAY_EVAPORATED_MILK = 18;
-    constexpr uint8_t PIN_RELAY_MILK = 19;
+    constexpr uint8_t PIN_RELAY_TEA = 18;
+    constexpr uint8_t PIN_RELAY_CONDENSED_MILK = 19;
+    constexpr uint8_t PIN_RELAY_EVAPORATED_MILK = 17;
+    constexpr uint8_t PIN_RELAY_MILK = 16;
 
     // Relay activation mode
     constexpr bool RELAY_ACTIVE_LOW = true;
