@@ -47,6 +47,28 @@ void setup()
                 buttonManager.setButtonInfo(id, info);
                 bluetoothManager.sendJSON("BUTTONS_INFO", buttonManager.getButtonsInfoJSON());
             }
+            else if (type == "SET_CUP_WEIGHT")
+            {
+                JsonObjectConst payload = doc["payload"];
+                float weight = payload["weight"] | -1.0f;
+                if (weight >= 0.0f)
+                {
+                    teaManager.setMinCupWeight(weight);
+                    JsonDocument resp;
+                    resp["cupWeight"] = teaManager.getMinCupWeight();
+                    bluetoothManager.sendJSON("CUP_WEIGHT", resp);
+                }
+                else
+                {
+                    bluetoothManager.sendError("SET_CUP_WEIGHT_ERROR", "Invalid weight value");
+                }
+            }
+            else if (type == "GET_CUP_WEIGHT")
+            {
+                JsonDocument resp;
+                resp["cupWeight"] = teaManager.getMinCupWeight();
+                bluetoothManager.sendJSON("CUP_WEIGHT", resp);
+            }
             else
                 DEBUG_PRINTLN(F("Unknown Type"));
         });
@@ -100,6 +122,11 @@ void setup()
                     ButtonInfo info = buttonManager.getButtonInfo(btnIndex);
                     teaManager.previewRecipe(btnIndex, info);
                 }
+            }
+            else if (state == TeaState::CUP_WARNING)
+            {
+                // Any button press dismisses the cup warning
+                teaManager.dismissCupWarning();
             }
         });
 

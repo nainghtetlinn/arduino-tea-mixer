@@ -17,18 +17,14 @@ namespace
 
 } // anonymous namespace
 
-// =========================================================================
-// Public Interface
-// =========================================================================
-
-void WeightDispensingStrategy::start(const TeaRecipe &recipe, SensorManager *sensor, RelayManager *relay)
+void WeightDispensingStrategy::start(const TeaRecipe &recipe)
 {
     target = recipe;
 
     // Record the current weight as baseline
-    if (sensor)
+    if (sensorMgr)
     {
-        weightAtPhaseStart = sensor->getWeight();
+        weightAtPhaseStart = sensorMgr->getWeight();
     }
     else
     {
@@ -37,10 +33,10 @@ void WeightDispensingStrategy::start(const TeaRecipe &recipe, SensorManager *sen
 
     // Start with the first liquid that has a non-zero target
     currentPhase = DispensingPhase::TEA;
-    startPhase(currentPhase, relay);
+    startPhase(currentPhase);
 }
 
-bool WeightDispensingStrategy::update(TeaRecipe &dispensed, SensorManager *sensor, RelayManager *relay)
+bool WeightDispensingStrategy::update(TeaRecipe &dispensed)
 {
     if (currentPhase == DispensingPhase::DONE)
     {
@@ -54,15 +50,15 @@ bool WeightDispensingStrategy::update(TeaRecipe &dispensed, SensorManager *senso
         if (elapsed > DISPENSING_SAFETY_TIMEOUT_MS)
         {
             DEBUG_PRINTLN(F("[WeightDispensing] SAFETY TIMEOUT - stopping"));
-            stop(relay);
+            stop();
             return true;
         }
     }
 
-    if (!sensor)
+    if (!sensorMgr)
         return false;
 
-    float currentWeight = sensor->getWeight();
+    float currentWeight = sensorMgr->getWeight();
     float dispensedGrams = currentWeight - weightAtPhaseStart;
     if (dispensedGrams < 0)
         dispensedGrams = 0;
@@ -98,9 +94,9 @@ bool WeightDispensingStrategy::update(TeaRecipe &dispensed, SensorManager *senso
     {
         // Phase complete - turn off current relay
         uint8_t relayIdx = getRelayIndexForPhase(currentPhase);
-        if (relay)
+        if (relayMgr)
         {
-            relay->setRelay(relayIdx, false);
+            relayMgr->setRelay(relayIdx, false);
         }
 
         // Finalize dispensed amount for this phase
@@ -132,7 +128,7 @@ bool WeightDispensingStrategy::update(TeaRecipe &dispensed, SensorManager *senso
 
         if (currentPhase != DispensingPhase::DONE)
         {
-            startPhase(currentPhase, relay);
+            startPhase(currentPhase);
             return false;
         }
         else
@@ -144,11 +140,11 @@ bool WeightDispensingStrategy::update(TeaRecipe &dispensed, SensorManager *senso
     return false;
 }
 
-void WeightDispensingStrategy::stop(RelayManager *relay)
+void WeightDispensingStrategy::stop()
 {
-    if (relay)
+    if (relayMgr)
     {
-        relay->stopAll();
+        relayMgr->stopAll();
     }
     currentPhase = DispensingPhase::DONE;
 }
@@ -157,7 +153,7 @@ void WeightDispensingStrategy::stop(RelayManager *relay)
 // Phase Management
 // =========================================================================
 
-void WeightDispensingStrategy::startPhase(DispensingPhase phase, RelayManager *relay)
+void WeightDispensingStrategy::startPhase(DispensingPhase phase)
 {
     int targetMl = getTargetMlForPhase(phase);
 
@@ -167,15 +163,15 @@ void WeightDispensingStrategy::startPhase(DispensingPhase phase, RelayManager *r
         advancePhase();
         if (currentPhase != DispensingPhase::DONE)
         {
-            startPhase(currentPhase, relay);
+            startPhase(currentPhase);
         }
         return;
     }
 
     uint8_t relayIdx = getRelayIndexForPhase(phase);
-    if (relay)
+    if (relayMgr)
     {
-        relay->setRelay(relayIdx, true);
+        relayMgr->setRelay(relayIdx, true);
     }
     phaseStartTime = millis();
 

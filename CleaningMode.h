@@ -11,12 +11,17 @@ class BluetoothManager;
 class CleaningMode
 {
 public:
-    // Call start() to begin, update() every tick, cancel() to abort.
-    void start(RelayManager *relay, DisplayManager *display, BluetoothManager *ble);
-    bool update(RelayManager *relay, DisplayManager *display, BluetoothManager *ble);
-    void cancel(RelayManager *relay, BluetoothManager *ble);
+    void begin(RelayManager *relay, DisplayManager *display, BluetoothManager *ble);
+
+    void start();
+    bool update();
+    void cancel();
 
 private:
+    RelayManager *relayMgr;
+    DisplayManager *displayMgr;
+    BluetoothManager *bleMgr;
+
     unsigned long cleaningStartTime;
     unsigned long lastProgressUpdate;
     bool isDoneDelay;

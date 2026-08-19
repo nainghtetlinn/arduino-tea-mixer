@@ -12,6 +12,7 @@ enum class TeaState : uint8_t
     CLEANING,
     CALIBRATION,
     FINISHED,
+    CUP_WARNING,
     ERROR
 };
 

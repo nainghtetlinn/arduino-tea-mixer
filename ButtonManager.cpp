@@ -9,16 +9,13 @@ namespace
     constexpr uint8_t PIN_BTN_2 = 26;
     constexpr uint8_t PIN_BTN_3 = 25;
 
-    // --- Constants ---
-    constexpr uint8_t NUM_BUTTONS = 3;
-
     // Default recipes in case none are saved in NVS
-    const char *defaultNames[NUM_BUTTONS] = {
+    const char *defaultNames[BUTTON_COUNT] = {
         "Pon Hman",
         "Cho Saint",
         "Kya Saint"};
 
-    const TeaRecipe defaultRecipes[NUM_BUTTONS] = {
+    const TeaRecipe defaultRecipes[BUTTON_COUNT] = {
         {240, 30, 30, 0}, // Pon Hman
         {240, 45, 30, 0}, // Cho Saint
         {240, 15, 15, 0}  // Kya Saint
@@ -83,7 +80,7 @@ void ButtonManager::attachCalibrationComboCallback(ButtonComboCallback comboCall
 
 void ButtonManager::update()
 {
-    for (int i = 0; i < NUM_BUTTONS; i++)
+    for (int i = 0; i < BUTTON_COUNT; i++)
     {
         buttons[i].tick();
     }
@@ -239,7 +236,7 @@ JsonDocument ButtonManager::getButtonsInfoJSON()
 {
     JsonDocument doc;
 
-    for (int i = 0; i < NUM_BUTTONS; i++)
+    for (int i = 0; i < BUTTON_COUNT; i++)
     {
         ButtonInfo info = getButtonInfo(i);
 
@@ -260,7 +257,7 @@ void ButtonManager::makeNvsKey(char *buffer, size_t bufferSize, int index, const
 
 void ButtonManager::handleButtonClick(int index)
 {
-    if (index >= 0 && index < NUM_BUTTONS && suppressClick[index])
+    if (index >= 0 && index < BUTTON_COUNT && suppressClick[index])
     {
         suppressClick[index] = false;
         DEBUG_PRINTF("[ButtonManager] Button %d click suppressed due to combo hold release.\n", index + 1);

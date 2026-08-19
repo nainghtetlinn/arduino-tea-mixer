@@ -13,6 +13,8 @@ namespace
     constexpr unsigned long PREVIEW_TIMEOUT_MS = 7000;
     constexpr unsigned long BLE_CONNECTED_DISPLAY_MS = 3000;
     constexpr float CUP_REMOVED_THRESHOLD = 0.30f; // weight must drop below 30% of finished weight
+    constexpr unsigned long CUP_WARNING_TIMEOUT_MS = 5000; // auto-dismiss warning after 5s
+    constexpr float DEFAULT_MIN_CUP_WEIGHT = 50.0f; // default minimum cup weight in grams
 
 } // anonymous namespace
 
@@ -32,6 +34,10 @@ TeaManager::TeaManager()
       finishedWeight(0.0f),
       weightDispensingMode(true),
       bleConnectedUntil(0),
+      minCupWeight(DEFAULT_MIN_CUP_WEIGHT),
+      weightBeforeDispensing(0.0f),
+      cupWarningIsCupRemoved(false),
+      cupWarningStartTime(0),
       previewButtonIndex(-1),
       previewStartTime(0),
       activeStrategy(nullptr)
@@ -47,7 +53,12 @@ void TeaManager::begin(RelayManager *relay, SensorManager *sensor, DisplayManage
     buttonMgr = button;
     bleMgr = ble;
 
+    cleaningMode.begin(relayMgr, displayMgr, bleMgr);
+    weightStrategy.begin(sensorMgr, relayMgr);
+    timeStrategy.begin(sensorMgr, relayMgr);
+
     loadDispensingMode();
+    loadMinCupWeight();
 }
 
 // ===== Main Update Loop =====
@@ -68,7 +79,7 @@ void TeaManager::update()
 
     case TeaState::CLEANING:
     {
-        if (cleaningMode.update(relayMgr, displayMgr, bleMgr))
+        if (cleaningMode.update())
         {
             currentState = TeaState::IDLE;
             currentProgress = 0;
@@ -101,6 +112,16 @@ void TeaManager::update()
         return;
     }
 
+    case TeaState::CUP_WARNING:
+    {
+        // Auto-dismiss after timeout
+        if (millis() - cupWarningStartTime >= CUP_WARNING_TIMEOUT_MS)
+        {
+            dismissCupWarning();
+        }
+        return;
+    }
+
     case TeaState::MAKING:
     {
         unsigned long now = millis();
@@ -111,7 +132,33 @@ void TeaManager::update()
 
         if (activeStrategy)
         {
-            bool done = activeStrategy->update(dispensed, sensorMgr, relayMgr);
+            // --- Mid-dispense cup removal check ---
+            if (sensorMgr)
+            {
+                float currentWeight = sensorMgr->getWeight();
+                if (currentWeight < minCupWeight)
+                {
+                    // Cup was removed mid-dispense — emergency stop
+                    DEBUG_PRINTLN(F("[TeaManager] Cup removed during dispensing — stopping!"));
+                    activeStrategy->stop();
+                    activeStrategy = nullptr;
+
+                    cupWarningIsCupRemoved = true;
+                    cupWarningStartTime = millis();
+                    currentState = TeaState::CUP_WARNING;
+                    currentProgress = 0;
+
+                    if (displayMgr)
+                    {
+                        displayMgr->showCupRemovedWarningScreen();
+                    }
+
+                    sendCupRemovedWarningJSON();
+                    return;
+                }
+            }
+
+            bool done = activeStrategy->update(dispensed);
             calculateProgress();
             sendTeaProgressJSON();
 
@@ -143,11 +190,40 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
         return;
     }
 
+    // --- Pre-dispense cup check ---
+    if (sensorMgr)
+    {
+        float currentWeight = sensorMgr->getWeight();
+        if (currentWeight < minCupWeight)
+        {
+            DEBUG_PRINTF("[TeaManager] No cup detected (weight: %.1fg, min: %.1fg)\n",
+                         currentWeight, minCupWeight);
+
+            cupWarningIsCupRemoved = false;
+            cupWarningStartTime = millis();
+            currentState = TeaState::CUP_WARNING;
+
+            if (displayMgr)
+            {
+                displayMgr->showNoCupWarningScreen();
+            }
+
+            if (bleMgr)
+            {
+                bleMgr->sendError("NO_CUP", "No cup detected on the scale");
+            }
+            return;
+        }
+    }
+
     target = recipe;
     dispensed = {0, 0, 0, 0};
     currentState = TeaState::MAKING;
     currentProgress = 0;
     lastUpdate = millis();
+
+    // Record weight baseline for mid-dispense cup removal detection
+    weightBeforeDispensing = sensorMgr ? sensorMgr->getWeight() : 0.0f;
 
     DEBUG_PRINTF("[TeaManager] Starting dispensing (mode: %s)\n",
                  weightDispensingMode ? "WEIGHT" : "TIME");
@@ -162,7 +238,7 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
     {
         activeStrategy = &timeStrategy;
     }
-    activeStrategy->start(target, sensorMgr, relayMgr);
+    activeStrategy->start(target);
 
     sendTeaStartJSON();
 }
@@ -201,7 +277,7 @@ void TeaManager::stopAll()
 {
     if (activeStrategy)
     {
-        activeStrategy->stop(relayMgr);
+        activeStrategy->stop();
         activeStrategy = nullptr;
     }
     else if (relayMgr)
@@ -273,7 +349,7 @@ void TeaManager::startCleaningMode()
     }
 
     currentState = TeaState::CLEANING;
-    cleaningMode.start(relayMgr, displayMgr, bleMgr);
+    cleaningMode.start();
 }
 
 void TeaManager::cancelCleaningMode()
@@ -281,7 +357,7 @@ void TeaManager::cancelCleaningMode()
     if (currentState != TeaState::CLEANING)
         return;
 
-    cleaningMode.cancel(relayMgr, bleMgr);
+    cleaningMode.cancel();
     currentState = TeaState::IDLE;
 }
 
@@ -381,6 +457,47 @@ void TeaManager::saveDispensingMode(bool isWeight)
                  isWeight ? "WEIGHT" : "TIME");
 }
 
+void TeaManager::loadMinCupWeight()
+{
+    Preferences prefs;
+    prefs.begin("tea_settings", true);
+    minCupWeight = prefs.getFloat("cup_weight", DEFAULT_MIN_CUP_WEIGHT);
+    prefs.end();
+    DEBUG_PRINTF("[TeaManager] Loaded min cup weight from NVS: %.1fg\n", minCupWeight);
+}
+
+void TeaManager::saveMinCupWeight(float weight)
+{
+    Preferences prefs;
+    prefs.begin("tea_settings", false);
+    prefs.putFloat("cup_weight", weight);
+    prefs.end();
+    DEBUG_PRINTF("[TeaManager] Saved min cup weight to NVS: %.1fg\n", weight);
+}
+
+float TeaManager::getMinCupWeight() const
+{
+    return minCupWeight;
+}
+
+void TeaManager::setMinCupWeight(float weight)
+{
+    if (weight < 0.0f)
+        weight = 0.0f;
+    minCupWeight = weight;
+    saveMinCupWeight(weight);
+}
+
+void TeaManager::dismissCupWarning()
+{
+    if (currentState != TeaState::CUP_WARNING)
+        return;
+
+    currentState = TeaState::IDLE;
+    currentProgress = 0;
+    DEBUG_PRINTLN(F("[TeaManager] Cup warning dismissed"));
+}
+
 // ===== JSON Reporting =====
 
 void TeaManager::sendTeaStartJSON()
@@ -421,6 +538,16 @@ void TeaManager::sendCupRemovedJSON()
     {
         JsonDocument emptyPayload;
         bleMgr->sendJSON("CUP_REMOVED", emptyPayload);
+    }
+}
+
+void TeaManager::sendCupRemovedWarningJSON()
+{
+    if (bleMgr)
+    {
+        JsonDocument doc;
+        doc["reason"] = "CUP_REMOVED_DURING_DISPENSING";
+        bleMgr->sendJSON("CUP_WARNING", doc);
     }
 }
 
@@ -479,6 +606,16 @@ void TeaManager::updateDisplay()
         if (sensorMgr)
         {
             displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+        }
+        break;
+    case TeaState::CUP_WARNING:
+        if (cupWarningIsCupRemoved)
+        {
+            displayMgr->showCupRemovedWarningScreen();
+        }
+        else
+        {
+            displayMgr->showNoCupWarningScreen();
         }
         break;
     default:

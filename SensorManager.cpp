@@ -21,9 +21,9 @@ SensorManager::SensorManager()
     : oneWire(PIN_ONE_WIRE),
       sensors(&oneWire),
       lastSensorUpdate(0),
+      newDataAvailable(false),
       currentTemperature(0.0f),
       currentWeight(0.0f),
-      newDataAvailable(false),
       activeCalibrationFactor(DEFAULT_CALIBRATION_FACTOR)
 {
 }

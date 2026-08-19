@@ -22,7 +22,6 @@ public:
 private:
     bool relayActive[RELAY_COUNT];
 
-    void setupRelayPins();
     uint8_t getRelayPin(uint8_t index) const;
 };
 

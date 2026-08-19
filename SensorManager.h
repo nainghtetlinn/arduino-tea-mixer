@@ -30,10 +30,10 @@ private:
     HX711 scale;
 
     unsigned long lastSensorUpdate;
+    bool newDataAvailable;
     float currentTemperature;
     float currentWeight;
     float activeCalibrationFactor;
-    bool newDataAvailable;
 
     void loadSavedCalibrationFactor();
     void saveCalibrationFactor(float newFactor);

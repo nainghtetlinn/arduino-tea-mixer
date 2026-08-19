@@ -24,6 +24,9 @@ public:
 
     void showBleConnectedScreen();
 
+    void showNoCupWarningScreen();
+    void showCupRemovedWarningScreen();
+
 private:
     Adafruit_SSD1306 display;
     bool ready;

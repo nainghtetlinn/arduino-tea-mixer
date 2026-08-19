@@ -23,7 +23,11 @@ RelayManager::RelayManager()
 
 void RelayManager::begin()
 {
-    setupRelayPins();
+    for (uint8_t i = 0; i < RELAY_COUNT; i++)
+    {
+        pinMode(getRelayPin(i), OUTPUT);
+        setRelay(i, false);
+    }
     DEBUG_PRINTLN(F("[RelayManager] Initialized successfully."));
 }
 
@@ -70,16 +74,6 @@ bool RelayManager::isRelayActive(uint8_t index) const
 // =========================================================================
 // Private Helpers
 // =========================================================================
-
-void RelayManager::setupRelayPins()
-{
-    for (uint8_t i = 0; i < RELAY_COUNT; i++)
-    {
-        pinMode(getRelayPin(i), OUTPUT);
-        // Ensure all relays start OFF
-        setRelay(i, false);
-    }
-}
 
 uint8_t RelayManager::getRelayPin(uint8_t index) const
 {

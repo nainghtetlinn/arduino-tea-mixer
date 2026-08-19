@@ -12,11 +12,7 @@ namespace
 
 } // anonymous namespace
 
-// =========================================================================
-// Public Interface
-// =========================================================================
-
-void TimeDispensingStrategy::start(const TeaRecipe &recipe, SensorManager * /*sensor*/, RelayManager *relay)
+void TimeDispensingStrategy::start(const TeaRecipe &recipe)
 {
     target = recipe;
 
@@ -32,9 +28,9 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe, SensorManager * /*se
             relayDuration[i] = (unsigned long)((targets[i] / flowRate) * 1000.0f);
             relayStartTime[i] = now;
             relayRunning[i] = true;
-            if (relay)
+            if (relayMgr)
             {
-                relay->setRelay(i, true);
+                relayMgr->setRelay(i, true);
             }
 
             DEBUG_PRINTF("[TimeDispensing] Relay %d ON for %lu ms (%d ml)\n",
@@ -49,7 +45,7 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe, SensorManager * /*se
     }
 }
 
-bool TimeDispensingStrategy::update(TeaRecipe &dispensed, SensorManager * /*sensor*/, RelayManager *relay)
+bool TimeDispensingStrategy::update(TeaRecipe &dispensed)
 {
     unsigned long now = millis();
     bool anyActive = false;
@@ -66,9 +62,9 @@ bool TimeDispensingStrategy::update(TeaRecipe &dispensed, SensorManager * /*sens
         if (elapsed >= relayDuration[i])
         {
             // This relay is done
-            if (relay)
+            if (relayMgr)
             {
-                relay->setRelay(i, false);
+                relayMgr->setRelay(i, false);
             }
             relayRunning[i] = false;
 
@@ -120,11 +116,11 @@ bool TimeDispensingStrategy::update(TeaRecipe &dispensed, SensorManager * /*sens
     return !anyActive;
 }
 
-void TimeDispensingStrategy::stop(RelayManager *relay)
+void TimeDispensingStrategy::stop()
 {
-    if (relay)
+    if (relayMgr)
     {
-        relay->stopAll();
+        relayMgr->stopAll();
     }
 
     for (uint8_t i = 0; i < RELAY_COUNT; i++)

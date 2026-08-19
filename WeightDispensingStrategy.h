@@ -7,9 +7,9 @@
 class WeightDispensingStrategy : public DispensingStrategy
 {
 public:
-    void start(const TeaRecipe &target, SensorManager *sensor, RelayManager *relay) override;
-    bool update(TeaRecipe &dispensed, SensorManager *sensor, RelayManager *relay) override;
-    void stop(RelayManager *relay) override;
+    void start(const TeaRecipe &target) override;
+    bool update(TeaRecipe &dispensed) override;
+    void stop() override;
 
 private:
     TeaRecipe target;
@@ -17,7 +17,7 @@ private:
     float weightAtPhaseStart;
     unsigned long phaseStartTime;
 
-    void startPhase(DispensingPhase phase, RelayManager *relay);
+    void startPhase(DispensingPhase phase);
     void advancePhase();
 
     int getTargetMlForPhase(DispensingPhase phase) const;

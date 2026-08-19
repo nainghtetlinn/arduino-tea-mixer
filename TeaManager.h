@@ -45,6 +45,13 @@ public:
     void toggleDispensingMode();
     bool isWeightMode() const;
 
+    // Cup weight threshold (NVS-configurable)
+    float getMinCupWeight() const;
+    void setMinCupWeight(float weight);
+
+    // Dismiss CUP_WARNING state
+    void dismissCupWarning();
+
     TeaState getState() const;
     uint8_t getProgress() const;
 
@@ -67,8 +74,16 @@ private:
     bool weightDispensingMode;
     unsigned long bleConnectedUntil;
 
+    // Cup presence detection
+    float minCupWeight;
+    float weightBeforeDispensing;
+    bool cupWarningIsCupRemoved; // true = cup removed mid-dispense, false = no cup at start
+    unsigned long cupWarningStartTime;
+
     void loadDispensingMode();
     void saveDispensingMode(bool isWeight);
+    void loadMinCupWeight();
+    void saveMinCupWeight(float weight);
 
     // --- Preview state ---
     ButtonInfo previewInfo;
@@ -90,6 +105,7 @@ private:
     void sendTeaProgressJSON();
     void sendTeaFinishedJSON();
     void sendCupRemovedJSON();
+    void sendCupRemovedWarningJSON();
     void calculateProgress();
     void updateDisplay();
 };

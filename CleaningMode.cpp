@@ -10,41 +10,44 @@ namespace
     constexpr unsigned long COMPLETE_DISPLAY_MS = 3000;
 } // anonymous namespace
 
-// =========================================================================
-// Public Interface
-// =========================================================================
+void CleaningMode::begin(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
+{
+    relayMgr = relay;
+    displayMgr = display;
+    bleMgr = ble;
+}
 
-void CleaningMode::start(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
+void CleaningMode::start()
 {
     cleaningStartTime = millis();
     lastProgressUpdate = cleaningStartTime;
     isDoneDelay = false;
 
-    if (relay)
+    if (relayMgr)
     {
         for (uint8_t i = 0; i < RELAY_COUNT; i++)
         {
-            relay->setRelay(i, true);
+            relayMgr->setRelay(i, true);
         }
     }
 
     DEBUG_PRINTLN(F("[CleaningMode] Started."));
 
-    if (ble)
+    if (bleMgr)
     {
         JsonDocument doc;
         doc["state"] = "CLEANING";
         doc["durationSeconds"] = CLEANING_DURATION_MS / 1000;
-        ble->sendJSON("CLEANING_START", doc);
+        bleMgr->sendJSON("CLEANING_START", doc);
     }
 
-    if (display)
+    if (displayMgr)
     {
-        display->showCleaningProgressScreen(20, 0);
+        displayMgr->showCleaningProgressScreen(20, 0);
     }
 }
 
-bool CleaningMode::update(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
+bool CleaningMode::update()
 {
     if (isDoneDelay)
     {
@@ -60,23 +63,23 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
 
     if (elapsed >= CLEANING_DURATION_MS)
     {
-        if (relay)
+        if (relayMgr)
         {
-            relay->stopAll();
+            relayMgr->stopAll();
         }
 
         DEBUG_PRINTLN(F("[CleaningMode] Finished successfully."));
 
-        if (ble)
+        if (bleMgr)
         {
             JsonDocument doc;
             doc["status"] = "COMPLETE";
-            ble->sendJSON("CLEANING_FINISHED", doc);
+            bleMgr->sendJSON("CLEANING_FINISHED", doc);
         }
 
-        if (display)
+        if (displayMgr)
         {
-            display->showCleaningCompleteScreen();
+            displayMgr->showCleaningCompleteScreen();
         }
 
         isDoneDelay = true;
@@ -87,36 +90,36 @@ bool CleaningMode::update(RelayManager *relay, DisplayManager *display, Bluetoot
     uint8_t remainingSeconds = (CLEANING_DURATION_MS - elapsed + 999) / 1000;
     uint8_t progress = (elapsed * 100) / CLEANING_DURATION_MS;
 
-    if (display)
+    if (displayMgr)
     {
-        display->showCleaningProgressScreen(remainingSeconds, progress);
+        displayMgr->showCleaningProgressScreen(remainingSeconds, progress);
     }
 
-    if (ble && (now - lastProgressUpdate >= 1000))
+    if (bleMgr && (now - lastProgressUpdate >= 1000))
     {
         lastProgressUpdate = now;
         JsonDocument doc;
         doc["remainingSeconds"] = remainingSeconds;
         doc["progress"] = progress;
-        ble->sendJSON("CLEANING_PROGRESS", doc);
+        bleMgr->sendJSON("CLEANING_PROGRESS", doc);
     }
 
     return false; // still running
 }
 
-void CleaningMode::cancel(RelayManager *relay, BluetoothManager *ble)
+void CleaningMode::cancel()
 {
-    if (relay)
+    if (relayMgr)
     {
-        relay->stopAll();
+        relayMgr->stopAll();
     }
 
     DEBUG_PRINTLN(F("[CleaningMode] Cancelled by user"));
 
-    if (ble)
+    if (bleMgr)
     {
         JsonDocument doc;
         doc["status"] = "CANCELLED";
-        ble->sendJSON("CLEANING_CANCELLED", doc);
+        bleMgr->sendJSON("CLEANING_CANCELLED", doc);
     }
 }

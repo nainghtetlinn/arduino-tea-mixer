@@ -18,16 +18,22 @@ class DispensingStrategy
 public:
     virtual ~DispensingStrategy() = default;
 
+    void begin(SensorManager *sensor, RelayManager *relay);
+
     // Begin dispensing the given recipe.
-    virtual void start(const TeaRecipe &target, SensorManager *sensor, RelayManager *relay) = 0;
+    virtual void start(const TeaRecipe &target) = 0;
 
     // Called every tick while dispensing is active.
     // Updates `dispensed` with current progress amounts.
     // Returns true when dispensing is complete.
-    virtual bool update(TeaRecipe &dispensed, SensorManager *sensor, RelayManager *relay) = 0;
+    virtual bool update(TeaRecipe &dispensed) = 0;
 
     // Emergency stop — immediately turn off all relays managed by this strategy.
-    virtual void stop(RelayManager *relay) = 0;
+    virtual void stop() = 0;
+
+protected:
+    SensorManager *sensorMgr = nullptr;
+    RelayManager *relayMgr = nullptr;
 };
 
 #endif
