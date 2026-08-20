@@ -47,27 +47,22 @@ void setup()
                 buttonManager.setButtonInfo(id, info);
                 bluetoothManager.sendJSON("BUTTONS_INFO", buttonManager.getButtonsInfoJSON());
             }
-            else if (type == "SET_CUP_WEIGHT")
+            else if (type == "TOGGLE_DISPENSING_MODE")
             {
-                JsonObjectConst payload = doc["payload"];
-                float weight = payload["weight"] | -1.0f;
-                if (weight >= 0.0f)
-                {
-                    teaManager.setMinCupWeight(weight);
-                    JsonDocument resp;
-                    resp["cupWeight"] = teaManager.getMinCupWeight();
-                    bluetoothManager.sendJSON("CUP_WEIGHT", resp);
-                }
-                else
-                {
-                    bluetoothManager.sendError("SET_CUP_WEIGHT_ERROR", "Invalid weight value");
-                }
+                teaManager.toggleDispensingMode();
+                JsonDocument resp;
+                resp["weightMode"] = teaManager.isWeightMode();
+                bluetoothManager.sendJSON("DISPENSING_MODE", resp);
             }
-            else if (type == "GET_CUP_WEIGHT")
+            else if (type == "GET_DEVICE_INFO")
             {
                 JsonDocument resp;
+                resp["temperature"] = sensorManager.getTemperature();
+                resp["weight"] = sensorManager.getWeight();
+                resp["calibrationFactor"] = sensorManager.getCalibrationFactor();
                 resp["cupWeight"] = teaManager.getMinCupWeight();
-                bluetoothManager.sendJSON("CUP_WEIGHT", resp);
+                resp["weightMode"] = teaManager.isWeightMode();
+                bluetoothManager.sendJSON("DEVICE_INFO", resp);
             }
             else
                 DEBUG_PRINTLN(F("Unknown Type"));

@@ -405,7 +405,8 @@ void TeaManager::resetCalibrationWeight()
 
 void TeaManager::toggleDispensingMode()
 {
-    if (currentState != TeaState::CALIBRATION)
+    // Block during active dispensing or cleaning
+    if (currentState == TeaState::MAKING || currentState == TeaState::CLEANING)
         return;
 
     weightDispensingMode = !weightDispensingMode;
@@ -414,7 +415,8 @@ void TeaManager::toggleDispensingMode()
     DEBUG_PRINTF("[TeaManager] Dispensing mode toggled to: %s\n",
                  weightDispensingMode ? "WEIGHT" : "TIME");
 
-    if (sensorMgr && displayMgr)
+    // Refresh calibration screen if currently in calibration mode
+    if (currentState == TeaState::CALIBRATION && sensorMgr && displayMgr)
     {
         displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
     }
