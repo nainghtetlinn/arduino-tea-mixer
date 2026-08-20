@@ -20,7 +20,7 @@ public:
     void showCleaningProgressScreen(uint8_t remainingSeconds, uint8_t progress);
     void showCleaningCompleteScreen();
 
-    void showCalibrationScreen(float temperature, float weight, bool weightMode);
+    void showCalibrationScreen(float temperature, float weight, bool weightMode, float cupWeight, bool calibratingCup);
 
     void showBleConnectedScreen();
 

@@ -12,9 +12,9 @@ namespace
     constexpr unsigned long DISPENSING_CHECK_INTERVAL_MS = 100;
     constexpr unsigned long PREVIEW_TIMEOUT_MS = 7000;
     constexpr unsigned long BLE_CONNECTED_DISPLAY_MS = 3000;
-    constexpr float CUP_REMOVED_THRESHOLD = 0.30f; // weight must drop below 30% of finished weight
+    constexpr float CUP_REMOVED_THRESHOLD = 0.30f;         // weight must drop below 30% of finished weight
     constexpr unsigned long CUP_WARNING_TIMEOUT_MS = 5000; // auto-dismiss warning after 5s
-    constexpr float DEFAULT_MIN_CUP_WEIGHT = 50.0f; // default minimum cup weight in grams
+    constexpr float DEFAULT_MIN_CUP_WEIGHT = 50.0f;        // default minimum cup weight in grams
 
 } // anonymous namespace
 
@@ -33,6 +33,7 @@ TeaManager::TeaManager()
       lastUpdate(0),
       finishedWeight(0.0f),
       weightDispensingMode(true),
+      calibratingCup(false),
       bleConnectedUntil(0),
       minCupWeight(DEFAULT_MIN_CUP_WEIGHT),
       weightBeforeDispensing(0.0f),
@@ -91,7 +92,7 @@ void TeaManager::update()
     {
         if (sensorMgr && displayMgr)
         {
-            displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+            displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
         }
         return;
     }
@@ -376,7 +377,7 @@ void TeaManager::startCalibrationMode()
 
     if (sensorMgr && displayMgr)
     {
-        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
     }
 }
 
@@ -385,6 +386,7 @@ void TeaManager::exitCalibrationMode()
     if (currentState != TeaState::CALIBRATION)
         return;
 
+    calibratingCup = false;
     currentState = TeaState::IDLE;
     DEBUG_PRINTLN(F("[TeaManager] Exited Calibration mode"));
 }
@@ -414,13 +416,51 @@ void TeaManager::toggleDispensingMode()
 
     if (sensorMgr && displayMgr)
     {
-        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
     }
 }
 
 bool TeaManager::isWeightMode() const
 {
     return weightDispensingMode;
+}
+
+// ===== Cup Weight Calibration =====
+
+void TeaManager::startCupWeightCalibration()
+{
+    if (currentState != TeaState::CALIBRATION)
+        return;
+
+    calibratingCup = true;
+    DEBUG_PRINTLN(F("[TeaManager] Cup weight calibration started — place cup on scale"));
+}
+
+void TeaManager::saveCupWeight()
+{
+    if (currentState != TeaState::CALIBRATION || !calibratingCup)
+        return;
+
+    if (sensorMgr)
+    {
+        float currentWeight = sensorMgr->getWeight();
+        if (currentWeight > 0.0f)
+        {
+            setMinCupWeight(currentWeight);
+            DEBUG_PRINTF("[TeaManager] Cup weight saved: %.1fg\n", currentWeight);
+        }
+        else
+        {
+            DEBUG_PRINTLN(F("[TeaManager] Cup weight not saved — weight is zero or negative"));
+        }
+    }
+
+    calibratingCup = false;
+}
+
+bool TeaManager::isCalibrating() const
+{
+    return calibratingCup;
 }
 
 // ===== State Queries =====
@@ -560,7 +600,6 @@ void TeaManager::showBleConnected()
     {
         displayMgr->showBleConnectedScreen();
     }
-    DEBUG_PRINTLN(F("[TeaManager] Showing BLE connected screen"));
 }
 
 void TeaManager::updateDisplay()
@@ -605,7 +644,7 @@ void TeaManager::updateDisplay()
     case TeaState::CALIBRATION:
         if (sensorMgr)
         {
-            displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode);
+            displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
         }
         break;
     case TeaState::CUP_WARNING:

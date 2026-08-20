@@ -28,7 +28,7 @@ public:
     {
         manager.isDeviceConnected = false;
         DEBUG_PRINTLN("Client disconnected");
-        delay(100);
+        delay(500);
         pServerInst->getAdvertising()->start();
         DEBUG_PRINTLN("Advertising restarted");
     }

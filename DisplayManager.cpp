@@ -514,14 +514,22 @@ void DisplayManager::showCleaningCompleteScreen()
 //  ╭────────────────────────────╮
 //  │     ▸ CALIBRATION MODE     │  y=0..13   Header box (128x14 rounded rect, text y=4)
 //  ╰────────────────────────────╯
-//  │  Temp: ............ 95.0 C │  y=16      Temp row (dotted line at y=19)
-//  │  Weight: .......... 25.5 g │  y=26      Weight row (dotted line at y=29)
-//  │  Mode: ............ WEIGHT │  y=36      Mode row (dotted line at y=39)
-//  ├────────────────────────────┤  y=46      Footer divider line
-//  │    B1:Tare  |  B2:Mode     │  y=48      Footer 1 text (centered)
-//  │     Hold B1+2 to Exit      │  y=56      Footer 2 text (centered)
+//  │  Cup Wt: .......... 50.0 g │  y=16      Cup Weight row
+//  │  Mode: ............ WEIGHT │  y=25      Mode row
+//  │  Weight: .......... 25.5 g │  y=34      Weight row
+//  │  Temp: ............ 95.0 C │  y=43      Temp row
+//  ├────────────────────────────┤  y=53      Footer divider line
+//  │     Hold B1+2 to Exit      │  y=55      Footer text (centered)
 //  └────────────────────────────┘  y=63      Screen bottom
-void DisplayManager::showCalibrationScreen(float temperature, float weight, bool weightMode)
+//
+//  When calibratingCup == true:
+//  ┌────────────────────────────┐
+//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=0..14   Inverted badge "PLACE CUP"
+//  │  Weight: .......... 25.5 g │  y=20      Realtime weight
+//  │                            │
+//  │   Press B1 again to save   │  y=56      Footer hint
+//  └────────────────────────────┘
+void DisplayManager::showCalibrationScreen(float temperature, float weight, bool weightMode, float cupWeight, bool calibratingCup)
 {
     if (!ready)
         return;
@@ -529,6 +537,51 @@ void DisplayManager::showCalibrationScreen(float temperature, float weight, bool
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
+
+    if (calibratingCup)
+    {
+        // --- Inverted badge header: "PLACE CUP" ---
+        constexpr int badgeW = 112;
+        constexpr int badgeH = 15;
+        constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
+        constexpr int badgeY = 0;
+
+        display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 3, SSD1306_WHITE);
+
+        constexpr char badge[] = "PLACE CUP";
+        constexpr int badgeTxtW = (sizeof(badge) - 1) * 6;
+        constexpr int badgeTxtX = (SCREEN_WIDTH - badgeTxtW) / 2;
+
+        display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+        display.setCursor(badgeTxtX, badgeY + 4);
+        display.print(badge);
+
+        // --- Realtime weight display (large, centered) ---
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+
+        char wBuf[16];
+        snprintf(wBuf, sizeof(wBuf), "%.1f g", weight);
+        const int wWidth = strlen(wBuf) * 12; // textSize 2 = 12px per char
+        const int wX = (SCREEN_WIDTH - wWidth) / 2;
+
+        display.setCursor(wX, 26);
+        display.print(wBuf);
+
+        // --- Footer hint ---
+        display.setTextSize(1);
+        constexpr char hint[] = "Press B1 to save";
+        constexpr int hintW = (sizeof(hint) - 1) * 6;
+        constexpr int hintX = (SCREEN_WIDTH - hintW) / 2;
+
+        display.setCursor(hintX, 56);
+        display.print(hint);
+
+        display.display();
+        return;
+    }
+
+    // ===== Normal calibration view =====
 
     // --- Header ---
     constexpr char title[] = "CALIBRATION MODE";
@@ -548,70 +601,49 @@ void DisplayManager::showCalibrationScreen(float temperature, float weight, bool
 
     display.drawRoundRect(0, 0, SCREEN_WIDTH, 14, 2, SSD1306_WHITE);
 
-    // --- Temperature Row ---
-    display.setCursor(8, 16);
-    display.print(F("Temp:"));
+    // --- Data rows (4 rows, 9px each starting at y=16) ---
+    constexpr int detailStartY = 16;
+    constexpr int rowH = 9;
 
-    char tempBuf[16];
-    snprintf(tempBuf, sizeof(tempBuf), "%.1f C", temperature);
+    // Helper lambda-like approach using arrays
+    const char *labels[] = {"Cup Wt:", "Mode:", "Weight:", "Temp:"};
+    char valueBufs[4][16];
 
-    // Must use strlen() here because snprintf output length is dynamic
-    const int tempWidth = strlen(tempBuf) * 6;
-    display.setCursor(SCREEN_WIDTH - tempWidth - 8, 16);
-    display.print(tempBuf);
+    snprintf(valueBufs[0], sizeof(valueBufs[0]), "%.1f g", cupWeight);
+    snprintf(valueBufs[1], sizeof(valueBufs[1]), "%s", weightMode ? "WEIGHT" : "TIME");
+    snprintf(valueBufs[2], sizeof(valueBufs[2]), "%.1f g", weight);
+    snprintf(valueBufs[3], sizeof(valueBufs[3]), "%.1f C", temperature);
 
-    for (int x = 44; x < SCREEN_WIDTH - tempWidth - 12; x += 3)
+    for (int i = 0; i < 4; i++)
     {
-        display.drawPixel(x, 19, SSD1306_WHITE);
-    }
+        const int y = detailStartY + i * rowH;
 
-    // --- Weight Row ---
-    display.setCursor(8, 26);
-    display.print(F("Weight:"));
+        display.setCursor(8, y);
+        display.print(labels[i]);
 
-    char weightBuf[16];
-    snprintf(weightBuf, sizeof(weightBuf), "%.1f g", weight);
-    const int weightWidth = strlen(weightBuf) * 6;
+        const int valWidth = strlen(valueBufs[i]) * 6;
+        display.setCursor(SCREEN_WIDTH - valWidth - 8, y);
+        display.print(valueBufs[i]);
 
-    display.setCursor(SCREEN_WIDTH - weightWidth - 8, 26);
-    display.print(weightBuf);
+        // Dotted line between label and value
+        const int labelEnd = 8 + strlen(labels[i]) * 6 + 4;
+        const int valStart = SCREEN_WIDTH - valWidth - 8 - 4;
 
-    for (int x = 56; x < SCREEN_WIDTH - weightWidth - 12; x += 3)
-    {
-        display.drawPixel(x, 29, SSD1306_WHITE);
-    }
-
-    // --- Dispensing Mode Row ---
-    display.setCursor(8, 36);
-    display.print(F("Mode:"));
-
-    const char *modeStr = weightMode ? "WEIGHT" : "TIME";
-    const int modeWidth = (weightMode ? 6 : 4) * 6;
-
-    display.setCursor(SCREEN_WIDTH - modeWidth - 8, 36);
-    display.print(modeStr);
-
-    for (int x = 44; x < SCREEN_WIDTH - modeWidth - 12; x += 3)
-    {
-        display.drawPixel(x, 39, SSD1306_WHITE);
+        for (int x = labelEnd; x < valStart; x += 3)
+        {
+            display.drawPixel(x, y + 3, SSD1306_WHITE);
+        }
     }
 
     // --- Footer ---
-    display.drawFastHLine(0, 46, SCREEN_WIDTH, SSD1306_WHITE);
+    display.drawFastHLine(0, 53, SCREEN_WIDTH, SSD1306_WHITE);
 
-    constexpr char footer1[] = "B1:Tare  |  B2:Mode";
-    constexpr int f1Width = (sizeof(footer1) - 1) * 6;
-    constexpr int f1X = (SCREEN_WIDTH - f1Width) / 2;
+    constexpr char footer[] = "Hold B1+2 to Exit";
+    constexpr int fWidth = (sizeof(footer) - 1) * 6;
+    constexpr int fX = (SCREEN_WIDTH - fWidth) / 2;
 
-    display.setCursor(f1X, 48);
-    display.print(footer1);
-
-    constexpr char footer2[] = "Hold B1+2 to Exit";
-    constexpr int f2Width = (sizeof(footer2) - 1) * 6;
-    constexpr int f2X = (SCREEN_WIDTH - f2Width) / 2;
-
-    display.setCursor(f2X, 56);
-    display.print(footer2);
+    display.setCursor(fX, 55);
+    display.print(footer);
 
     display.display();
 }

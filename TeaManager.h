@@ -45,6 +45,11 @@ public:
     void toggleDispensingMode();
     bool isWeightMode() const;
 
+    // Cup weight calibration (within calibration mode)
+    void startCupWeightCalibration();
+    void saveCupWeight();
+    bool isCalibrating() const;
+
     // Cup weight threshold (NVS-configurable)
     float getMinCupWeight() const;
     void setMinCupWeight(float weight);
@@ -72,6 +77,7 @@ private:
     unsigned long lastUpdate;
     float finishedWeight;
     bool weightDispensingMode;
+    bool calibratingCup;
     unsigned long bleConnectedUntil;
 
     // Cup presence detection

@@ -89,13 +89,26 @@ void setup()
             {
                 if (btnIndex == 0)
                 {
-                    // Btn 1 clicked while calibration mode is active: reset weight reading to 0
-                    teaManager.resetCalibrationWeight();
+                    // Btn 1: toggle cup weight calibration
+                    // First press enters "place cup" mode, second press saves the weight
+                    if (teaManager.isCalibrating())
+                    {
+                        teaManager.saveCupWeight();
+                    }
+                    else
+                    {
+                        teaManager.startCupWeightCalibration();
+                    }
                 }
                 else if (btnIndex == 1)
                 {
-                    // Btn 2 clicked while calibration mode is active: toggle dispensing mode (WEIGHT <-> TIME)
+                    // Btn 2: toggle dispensing mode (WEIGHT <-> TIME)
                     teaManager.toggleDispensingMode();
+                }
+                else if (btnIndex == 2)
+                {
+                    // Btn 3: tare (zero) the weight sensor
+                    teaManager.resetCalibrationWeight();
                 }
             }
             else if (state == TeaState::CLEANING)
