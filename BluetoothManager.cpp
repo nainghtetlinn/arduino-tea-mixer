@@ -17,7 +17,7 @@ public:
     void onConnect(BLEServer *pServerInst) override
     {
         manager.isDeviceConnected = true;
-        DEBUG_PRINTLN("Client connected");
+        DEBUG_PRINTLN("[Bluetooth] Client connected");
         if (manager.bleOnConnectCb)
         {
             manager.bleOnConnectCb();
@@ -27,10 +27,10 @@ public:
     void onDisconnect(BLEServer *pServerInst) override
     {
         manager.isDeviceConnected = false;
-        DEBUG_PRINTLN("Client disconnected");
+        DEBUG_PRINTLN("[Bluetooth] Client disconnected");
         delay(500);
         pServerInst->getAdvertising()->start();
-        DEBUG_PRINTLN("Advertising restarted");
+        DEBUG_PRINTLN("[Bluetooth] Advertising restarted");
     }
 };
 
@@ -43,7 +43,7 @@ public:
     void onWrite(BLECharacteristic *pChar) override
     {
         String value = pChar->getValue();
-        DEBUG_PRINTLN(value);
+        DEBUG_PRINTLN("[Bluetooth] RECEIVED: " + value);
 
         JsonDocument doc;
         if (!deserializeJson(doc, value))
@@ -56,7 +56,7 @@ public:
                 }
             }
             else
-                DEBUG_PRINTLN("Unknown data");
+                DEBUG_PRINTLN("[Bluetooth] Unknown data received");
         }
     }
 };
@@ -121,7 +121,7 @@ void BluetoothManager::sendJSON(const String &type, const JsonDocument &payload)
     pCharacteristic->setValue(output.c_str());
     pCharacteristic->notify();
 
-    DEBUG_PRINTLN("[BluetoothManager] NOTIFY: " + type);
+    DEBUG_PRINTLN("[Bluetooth] NOTIFY: " + output);
 }
 
 void BluetoothManager::sendError(const String &errorCode, const String &errorMessage)
@@ -130,7 +130,7 @@ void BluetoothManager::sendError(const String &errorCode, const String &errorMes
         return;
 
     JsonDocument doc;
-    doc["type"] = "ERROR";
+    doc["type"] = BleResponse::ERROR;
     JsonObject payload = doc["payload"].to<JsonObject>();
     payload["code"] = errorCode;
     payload["message"] = errorMessage;
@@ -141,7 +141,7 @@ void BluetoothManager::sendError(const String &errorCode, const String &errorMes
     pCharacteristic->setValue(output.c_str());
     pCharacteristic->notify();
 
-    DEBUG_PRINTLN("[BluetoothManager] NOTIFY: " + errorCode);
+    DEBUG_PRINTLN("[Bluetooth] NOTIFY: " + errorCode + "___" + errorMessage);
 }
 
 bool BluetoothManager::isConnected() const

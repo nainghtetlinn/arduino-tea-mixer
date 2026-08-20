@@ -25,36 +25,36 @@ void setup()
         [](const JsonDocument &doc)
         {
             String type = doc["type"].as<String>();
-            DEBUG_PRINTLN("[BluetoothManager] Handle: " + type);
 
-            if (type == "MAKE_TEA")
+            JsonObjectConst payload = doc["payload"].as<JsonObjectConst>();
+
+            if (type == BleCommand::MAKE_TEA)
             {
-                JsonObjectConst payload = doc["payload"];
                 TeaRecipe recipe;
                 recipe.fromJson(payload);
                 teaManager.startMakingTea(recipe);
             }
-            else if (type == "GET_BUTTONS_INFO")
+            else if (type == BleCommand::GET_BUTTONS_INFO)
             {
-                bluetoothManager.sendJSON("BUTTONS_INFO", buttonManager.getButtonsInfoJSON());
+                bluetoothManager.sendJSON(BleResponse::BUTTONS_INFO, buttonManager.getButtonsInfoJSON());
             }
-            else if (type == "SET_BUTTON_INFO")
+            else if (type == BleCommand::SET_BUTTON_INFO)
             {
-                JsonObjectConst payload = doc["payload"];
                 int id = payload["id"] | -1;
                 ButtonInfo info;
                 info.fromJson(payload);
                 buttonManager.setButtonInfo(id, info);
-                bluetoothManager.sendJSON("BUTTONS_INFO", buttonManager.getButtonsInfoJSON());
+                bluetoothManager.sendJSON(BleResponse::BUTTONS_INFO, buttonManager.getButtonsInfoJSON());
             }
-            else if (type == "TOGGLE_DISPENSING_MODE")
+            else if (type == BleCommand::SET_DISPENSING_MODE)
             {
-                teaManager.toggleDispensingMode();
+                bool weightMode = payload["weightMode"] | teaManager.isWeightMode();
+                teaManager.setDispensingMode(weightMode);
                 JsonDocument resp;
                 resp["weightMode"] = teaManager.isWeightMode();
-                bluetoothManager.sendJSON("DISPENSING_MODE", resp);
+                bluetoothManager.sendJSON(BleResponse::DISPENSING_MODE, resp);
             }
-            else if (type == "GET_DEVICE_INFO")
+            else if (type == BleCommand::GET_DEVICE_INFO)
             {
                 JsonDocument resp;
                 resp["temperature"] = sensorManager.getTemperature();
@@ -62,7 +62,7 @@ void setup()
                 resp["calibrationFactor"] = sensorManager.getCalibrationFactor();
                 resp["cupWeight"] = teaManager.getMinCupWeight();
                 resp["weightMode"] = teaManager.isWeightMode();
-                bluetoothManager.sendJSON("DEVICE_INFO", resp);
+                bluetoothManager.sendJSON(BleResponse::DEVICE_INFO, resp);
             }
             else
                 DEBUG_PRINTLN(F("Unknown Type"));

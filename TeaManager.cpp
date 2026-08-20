@@ -427,6 +427,25 @@ bool TeaManager::isWeightMode() const
     return weightDispensingMode;
 }
 
+void TeaManager::setDispensingMode(bool isWeight)
+{
+    // Block during active dispensing or cleaning
+    if (currentState == TeaState::MAKING || currentState == TeaState::CLEANING)
+        return;
+
+    weightDispensingMode = isWeight;
+    saveDispensingMode(weightDispensingMode);
+
+    DEBUG_PRINTF("[TeaManager] Dispensing mode set to: %s\n",
+                 weightDispensingMode ? "WEIGHT" : "TIME");
+
+    // Refresh calibration screen if currently in calibration mode
+    if (currentState == TeaState::CALIBRATION && sensorMgr && displayMgr)
+    {
+        displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
+    }
+}
+
 // ===== Cup Weight Calibration =====
 
 void TeaManager::startCupWeightCalibration()
@@ -549,7 +568,7 @@ void TeaManager::sendTeaStartJSON()
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
         target.toJson(obj);
-        bleMgr->sendJSON("TEA_START", doc);
+        bleMgr->sendJSON(BleResponse::TEA_START, doc);
     }
 }
 
@@ -561,7 +580,7 @@ void TeaManager::sendTeaProgressJSON()
         JsonObject obj = doc.to<JsonObject>();
         dispensed.toJson(obj);
         obj["percentage"] = currentProgress;
-        bleMgr->sendJSON("TEA_PROGRESS", doc);
+        bleMgr->sendJSON(BleResponse::TEA_PROGRESS, doc);
     }
 }
 
@@ -570,7 +589,7 @@ void TeaManager::sendTeaFinishedJSON()
     if (bleMgr)
     {
         JsonDocument emptyPayload;
-        bleMgr->sendJSON("TEA_FINISH", emptyPayload);
+        bleMgr->sendJSON(BleResponse::TEA_FINISH, emptyPayload);
     }
 }
 
@@ -579,7 +598,7 @@ void TeaManager::sendCupRemovedJSON()
     if (bleMgr)
     {
         JsonDocument emptyPayload;
-        bleMgr->sendJSON("CUP_REMOVED", emptyPayload);
+        bleMgr->sendJSON(BleResponse::CUP_REMOVED, emptyPayload);
     }
 }
 
@@ -589,7 +608,7 @@ void TeaManager::sendCupRemovedWarningJSON()
     {
         JsonDocument doc;
         doc["reason"] = "CUP_REMOVED_DURING_DISPENSING";
-        bleMgr->sendJSON("CUP_WARNING", doc);
+        bleMgr->sendJSON(BleResponse::CUP_WARNING, doc);
     }
 }
 

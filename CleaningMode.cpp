@@ -38,7 +38,7 @@ void CleaningMode::start()
         JsonDocument doc;
         doc["state"] = "CLEANING";
         doc["durationSeconds"] = CLEANING_DURATION_MS / 1000;
-        bleMgr->sendJSON("CLEANING_START", doc);
+        bleMgr->sendJSON(BleResponse::CLEANING_START, doc);
     }
 
     if (displayMgr)
@@ -74,7 +74,7 @@ bool CleaningMode::update()
         {
             JsonDocument doc;
             doc["status"] = "COMPLETE";
-            bleMgr->sendJSON("CLEANING_FINISHED", doc);
+            bleMgr->sendJSON(BleResponse::CLEANING_FINISHED, doc);
         }
 
         if (displayMgr)
@@ -101,7 +101,7 @@ bool CleaningMode::update()
         JsonDocument doc;
         doc["remainingSeconds"] = remainingSeconds;
         doc["progress"] = progress;
-        bleMgr->sendJSON("CLEANING_PROGRESS", doc);
+        bleMgr->sendJSON(BleResponse::CLEANING_PROGRESS, doc);
     }
 
     return false; // still running
@@ -120,6 +120,6 @@ void CleaningMode::cancel()
     {
         JsonDocument doc;
         doc["status"] = "CANCELLED";
-        bleMgr->sendJSON("CLEANING_CANCELLED", doc);
+        bleMgr->sendJSON(BleResponse::CLEANING_CANCELLED, doc);
     }
 }

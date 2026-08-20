@@ -43,6 +43,7 @@ public:
     void exitCalibrationMode();
     void resetCalibrationWeight();
     void toggleDispensingMode();
+    void setDispensingMode(bool weightMode);
     bool isWeightMode() const;
 
     // Cup weight calibration (within calibration mode)
