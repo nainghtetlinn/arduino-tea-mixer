@@ -55,6 +55,10 @@ public:
     float getMinCupWeight() const;
     void setMinCupWeight(float weight);
 
+    // Target total ml (NVS-configurable, updated via BLE)
+    int getTargetTotalMl() const;
+    void setTargetTotalMl(int ml);
+
     // Dismiss CUP_WARNING state
     void dismissCupWarning();
 
@@ -86,6 +90,7 @@ private:
     float weightBeforeDispensing;
     bool cupWarningIsCupRemoved; // true = cup removed mid-dispense, false = no cup at start
     unsigned long cupWarningStartTime;
+    int targetTotalMl; // target total ml; recipe is scaled to this before dispensing
 
     // WAITING_FOR_CUP state
     TeaRecipe pendingRecipe;       // recipe to start once cup is placed
@@ -95,6 +100,8 @@ private:
     void saveDispensingMode(bool isWeight);
     void loadMinCupWeight();
     void saveMinCupWeight(float weight);
+    void loadTargetTotalMl();
+    void saveTargetTotalMl(int ml);
 
     // --- Preview state ---
     ButtonInfo previewInfo;

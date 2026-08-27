@@ -148,7 +148,7 @@ bool DisplayManager::begin()
 //  │  ▸ Cho Saint               │  y=35
 //  │  ▸ Kya Saint               │  y=49
 //  └────────────────────────────┘
-void DisplayManager::showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected)
+void DisplayManager::showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected, float temperature)
 {
     if (!ready)
         return;
@@ -163,7 +163,7 @@ void DisplayManager::showIdleScreen(const String &btn1, const String &btn2, cons
 
     constexpr int titleWidth = (sizeof(title) - 1) * 6;
     constexpr int totalWidth = iconWidth + gap + titleWidth;
-    constexpr int startX = (SCREEN_WIDTH - totalWidth) / 2;
+    constexpr int startX = 2;
     constexpr int headerY = 2;
 
     display.drawBitmap(startX, headerY, smallTeaIcon, iconWidth, iconHeight, SSD1306_WHITE);
@@ -172,10 +172,22 @@ void DisplayManager::showIdleScreen(const String &btn1, const String &btn2, cons
     display.setCursor(startX + iconWidth + gap, headerY);
     display.print(title);
 
+    // ===== Temperature — right-aligned in header =====
+    char tempBuf[8];
+    snprintf(tempBuf, sizeof(tempBuf), "%d\xF8""C", (int)temperature);
+    int tempWidth = strlen(tempBuf) * 6;
+    int rightCursor = SCREEN_WIDTH - tempWidth - 2;
+
     if (bleConnected)
     {
-        display.drawBitmap(SCREEN_WIDTH - iconWidth - 4, headerY, btIcon, iconWidth, iconHeight, SSD1306_WHITE);
+        int btX = rightCursor - iconWidth - 2;
+        if (btX > 0)
+        {
+            display.drawBitmap(btX, headerY, btIcon, iconWidth, iconHeight, SSD1306_WHITE);
+        }
     }
+    display.setCursor(rightCursor, headerY);
+    display.print(tempBuf);
 
     for (int x = 4; x < SCREEN_WIDTH - 4; x += 3)
     {

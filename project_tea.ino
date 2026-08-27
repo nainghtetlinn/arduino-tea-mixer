@@ -54,6 +54,20 @@ void setup()
                 resp["weightMode"] = teaManager.isWeightMode();
                 bluetoothManager.sendJSON(BleResponse::DISPENSING_MODE, resp);
             }
+            else if (type == BleCommand::GET_TARGET_ML)
+            {
+                JsonDocument resp;
+                resp["targetMl"] = teaManager.getTargetTotalMl();
+                bluetoothManager.sendJSON(BleResponse::TARGET_ML, resp);
+            }
+            else if (type == BleCommand::SET_TARGET_ML)
+            {
+                int ml = payload["targetMl"] | teaManager.getTargetTotalMl();
+                teaManager.setTargetTotalMl(ml);
+                JsonDocument resp;
+                resp["targetMl"] = teaManager.getTargetTotalMl();
+                bluetoothManager.sendJSON(BleResponse::TARGET_ML, resp);
+            }
             else if (type == BleCommand::GET_DEVICE_INFO)
             {
                 JsonDocument resp;
@@ -62,6 +76,7 @@ void setup()
                 resp["calibrationFactor"] = sensorManager.getCalibrationFactor();
                 resp["cupWeight"] = teaManager.getMinCupWeight();
                 resp["weightMode"] = teaManager.isWeightMode();
+                resp["targetMl"] = teaManager.getTargetTotalMl();
                 bluetoothManager.sendJSON(BleResponse::DEVICE_INFO, resp);
             }
             else

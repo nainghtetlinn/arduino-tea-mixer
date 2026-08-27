@@ -39,6 +39,7 @@ TeaManager::TeaManager()
       weightBeforeDispensing(0.0f),
       cupWarningIsCupRemoved(false),
       cupWarningStartTime(0),
+      targetTotalMl(300),
       previewButtonIndex(-1),
       previewStartTime(0),
       activeStrategy(nullptr),
@@ -62,6 +63,7 @@ void TeaManager::begin(RelayManager *relay, SensorManager *sensor, DisplayManage
 
     loadDispensingMode();
     loadMinCupWeight();
+    loadTargetTotalMl();
 }
 
 // ===== Main Update Loop =====
@@ -255,7 +257,8 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
         }
     }
 
-    target = recipe;
+    // Scale recipe ingredients proportionally to the target total ml
+    target = scaleRecipeToTarget(recipe, targetTotalMl);
     dispensed = {0, 0, 0, 0};
     currentState = TeaState::MAKING;
     currentProgress = 0;
@@ -266,8 +269,10 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
 
     DEBUG_PRINTF("[TeaManager] Starting dispensing (mode: %s)\n",
                  weightDispensingMode ? "WEIGHT" : "TIME");
-    DEBUG_PRINTF("[TeaManager] Target: tea=%d, cm=%d, em=%d, milk=%d\n",
-                 target.tea, target.condensedMilk, target.evaporatedMilk, target.milk);
+    DEBUG_PRINTF("[TeaManager] Raw recipe: tea=%d, cm=%d, em=%d, milk=%d\n",
+                 recipe.tea, recipe.condensedMilk, recipe.evaporatedMilk, recipe.milk);
+    DEBUG_PRINTF("[TeaManager] Scaled to %dml: tea=%d, cm=%d, em=%d, milk=%d\n",
+                 targetTotalMl, target.tea, target.condensedMilk, target.evaporatedMilk, target.milk);
 
     if (weightDispensingMode)
     {
@@ -587,6 +592,42 @@ void TeaManager::setMinCupWeight(float weight)
     saveMinCupWeight(weight);
 }
 
+// ===== Target Total ML =====
+
+void TeaManager::loadTargetTotalMl()
+{
+    Preferences prefs;
+    prefs.begin("tea_settings", true);
+    targetTotalMl = prefs.getInt("target_ml", 300);
+    prefs.end();
+    DEBUG_PRINTF("[TeaManager] Loaded target total ml from NVS: %dml\n", targetTotalMl);
+}
+
+void TeaManager::saveTargetTotalMl(int ml)
+{
+    Preferences prefs;
+    prefs.begin("tea_settings", false);
+    prefs.putInt("target_ml", ml);
+    prefs.end();
+    DEBUG_PRINTF("[TeaManager] Saved target total ml to NVS: %dml\n", ml);
+}
+
+int TeaManager::getTargetTotalMl() const
+{
+    return targetTotalMl;
+}
+
+void TeaManager::setTargetTotalMl(int ml)
+{
+    constexpr int MIN_ML = 50;
+    constexpr int MAX_ML = 2000;
+    if (ml < MIN_ML) ml = MIN_ML;
+    if (ml > MAX_ML) ml = MAX_ML;
+    targetTotalMl = ml;
+    saveTargetTotalMl(ml);
+    DEBUG_PRINTF("[TeaManager] Target total ml set to: %dml\n", ml);
+}
+
 void TeaManager::dismissCupWarning()
 {
     if (currentState != TeaState::CUP_WARNING)
@@ -685,7 +726,8 @@ void TeaManager::updateDisplay()
         String n1 = buttonMgr ? buttonMgr->getButtonName(1) : F("---");
         String n2 = buttonMgr ? buttonMgr->getButtonName(2) : F("---");
         bool ble = bleMgr ? bleMgr->isConnected() : false;
-        displayMgr->showIdleScreen(n0, n1, n2, ble);
+        float temp = sensorMgr ? sensorMgr->getTemperature() : 0.0f;
+        displayMgr->showIdleScreen(n0, n1, n2, ble, temp);
         break;
     }
     case TeaState::PREVIEW:

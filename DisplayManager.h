@@ -11,7 +11,7 @@ public:
     DisplayManager();
     bool begin();
 
-    void showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected);
+    void showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected, float temperature);
     void showRecipePreviewScreen(const String &name, const TeaRecipe &recipe);
 
     void showTeaProgressScreen(uint8_t progress);
