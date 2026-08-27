@@ -88,7 +88,6 @@ private:
     // Cup presence detection
     float minCupWeight;
     float weightBeforeDispensing;
-    bool cupWarningIsCupRemoved; // true = cup removed mid-dispense, false = no cup at start
     unsigned long cupWarningStartTime;
     int targetTotalMl; // target total ml; recipe is scaled to this before dispensing
 

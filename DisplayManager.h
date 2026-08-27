@@ -24,7 +24,6 @@ public:
 
     void showBleConnectedScreen();
 
-    void showNoCupWarningScreen();
     void showCupRemovedWarningScreen();
     void showPlaceCupScreen(); // persistent "Please place cup" waiting screen
 

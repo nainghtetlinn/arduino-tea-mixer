@@ -698,53 +698,7 @@ void DisplayManager::showBleConnectedScreen()
     display.display();
 }
 
-//  ┌────────────────────────────┐
-//  │                            │  y=0..14   Empty space
-//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=15      Badge top (112x17 rounded rect)
-//  │  █     ! NO CUP !       █  │  y=20      Inverted text (centered)
-//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=31      Badge bottom
-//  │                            │  y=32..39  Gap (8px)
-//  │     Place cup to brew      │  y=40      Footer text
-//  │                            │  y=48..63  Empty space
-//  └────────────────────────────┘
-void DisplayManager::showNoCupWarningScreen()
-{
-    if (!ready)
-        return;
 
-    display.clearDisplay();
-
-    constexpr int badgeW = 112;
-    constexpr int badgeH = 17;
-    constexpr int textHeight = 8;
-    constexpr int gap = 8;
-    constexpr int totalHeight = badgeH + gap + textHeight;
-
-    constexpr int badgeY = (SCREEN_HEIGHT - totalHeight) / 2;
-    constexpr int textY = badgeY + badgeH + gap;
-    constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
-
-    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
-
-    constexpr char msg[] = "! NO CUP !";
-    constexpr int msgWidth = (sizeof(msg) - 1) * 6;
-    constexpr int msgX = (SCREEN_WIDTH - msgWidth) / 2;
-
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
-    display.setCursor(msgX, badgeY + 5);
-    display.print(msg);
-
-    constexpr char footerText[] = "Place cup to brew";
-    constexpr int footerWidth = (sizeof(footerText) - 1) * 6;
-    constexpr int footerX = (SCREEN_WIDTH - footerWidth) / 2;
-
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(footerX, textY);
-    display.print(footerText);
-
-    display.display();
-}
 
 //  ┌────────────────────────────┐
 //  │                            │  y=0..14   Empty space

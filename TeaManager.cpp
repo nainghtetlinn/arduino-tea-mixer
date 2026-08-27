@@ -37,7 +37,6 @@ TeaManager::TeaManager()
       bleConnectedUntil(0),
       minCupWeight(DEFAULT_MIN_CUP_WEIGHT),
       weightBeforeDispensing(0.0f),
-      cupWarningIsCupRemoved(false),
       cupWarningStartTime(0),
       targetTotalMl(300),
       previewButtonIndex(-1),
@@ -184,7 +183,6 @@ void TeaManager::update()
                     activeStrategy->stop();
                     activeStrategy = nullptr;
 
-                    cupWarningIsCupRemoved = true;
                     cupWarningStartTime = millis();
                     currentState = TeaState::CUP_WARNING;
                     currentProgress = 0;
@@ -749,14 +747,7 @@ void TeaManager::updateDisplay()
         }
         break;
     case TeaState::CUP_WARNING:
-        if (cupWarningIsCupRemoved)
-        {
-            displayMgr->showCupRemovedWarningScreen();
-        }
-        else
-        {
-            displayMgr->showNoCupWarningScreen();
-        }
+        displayMgr->showCupRemovedWarningScreen();
         break;
     case TeaState::WAITING_FOR_CUP:
         displayMgr->showPlaceCupScreen();
