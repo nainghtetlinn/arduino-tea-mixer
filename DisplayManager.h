@@ -26,6 +26,7 @@ public:
 
     void showNoCupWarningScreen();
     void showCupRemovedWarningScreen();
+    void showPlaceCupScreen(); // persistent "Please place cup" waiting screen
 
 private:
     Adafruit_SSD1306 display;

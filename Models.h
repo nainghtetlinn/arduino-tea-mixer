@@ -13,6 +13,7 @@ enum class TeaState : uint8_t
     CALIBRATION,
     FINISHED,
     CUP_WARNING,
+    WAITING_FOR_CUP, // No cup at brew-start; waiting for user to place cup
     ERROR
 };
 

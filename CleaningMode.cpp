@@ -6,9 +6,13 @@
 
 namespace
 {
-    constexpr unsigned long CLEANING_DURATION_MS = 20000;
+    constexpr unsigned long PHASE_DURATION_MS = 30000;                 // 30 s per phase
+    constexpr unsigned long TOTAL_DURATION_MS = PHASE_DURATION_MS * 2; // 60 s total
     constexpr unsigned long COMPLETE_DISPLAY_MS = 3000;
+    constexpr unsigned long RELAY_SWITCH_DELAY_MS = 500;               // gap between phases
 } // anonymous namespace
+
+// ===== Lifecycle =====
 
 void CleaningMode::begin(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
 {
@@ -17,38 +21,48 @@ void CleaningMode::begin(RelayManager *relay, DisplayManager *display, Bluetooth
     bleMgr = ble;
 }
 
+// ===== Start =====
+
 void CleaningMode::start()
 {
-    cleaningStartTime = millis();
-    lastProgressUpdate = cleaningStartTime;
+    unsigned long now = millis();
+    cleaningStartTime = now;
+    phaseStartTime = now;
+    lastProgressUpdate = now;
     isDoneDelay = false;
+    isSwitching = false;
+    cleaningPhase = 0;
 
+    // Phase 0: enable relays 0 and 1 only
     if (relayMgr)
     {
-        for (uint8_t i = 0; i < RELAY_COUNT; i++)
-        {
-            relayMgr->setRelay(i, true);
-        }
+        relayMgr->setRelay(0, true);
+        relayMgr->setRelay(1, true);
+        relayMgr->setRelay(2, false);
+        relayMgr->setRelay(3, false);
     }
 
-    DEBUG_PRINTLN(F("[CleaningMode] Started."));
+    DEBUG_PRINTLN(F("[CleaningMode] Started phase 0 (relays 0+1)."));
 
     if (bleMgr)
     {
         JsonDocument doc;
         doc["state"] = "CLEANING";
-        doc["durationSeconds"] = CLEANING_DURATION_MS / 1000;
+        doc["durationSeconds"] = TOTAL_DURATION_MS / 1000;
         bleMgr->sendJSON(BleResponse::CLEANING_START, doc);
     }
 
     if (displayMgr)
     {
-        displayMgr->showCleaningProgressScreen(20, 0);
+        displayMgr->showCleaningProgressScreen(TOTAL_DURATION_MS / 1000, 0);
     }
 }
 
+// ===== Update (call every loop tick) =====
+
 bool CleaningMode::update()
 {
+    // --- Waiting for the "complete" banner to expire ---
     if (isDoneDelay)
     {
         if (millis() - cleaningDoneTime >= COMPLETE_DISPLAY_MS)
@@ -59,9 +73,39 @@ bool CleaningMode::update()
     }
 
     unsigned long now = millis();
-    unsigned long elapsed = now - cleaningStartTime;
+    unsigned long totalElapsed = now - cleaningStartTime;
+    unsigned long phaseElapsed = now - phaseStartTime;
 
-    if (elapsed >= CLEANING_DURATION_MS)
+    // ===== Phase transition: 0 → switching gap → 1 =====
+    if (cleaningPhase == 0 && !isSwitching && phaseElapsed >= PHASE_DURATION_MS)
+    {
+        // Turn off phase-0 relays and begin the switch gap
+        if (relayMgr)
+        {
+            relayMgr->setRelay(0, false);
+            relayMgr->setRelay(1, false);
+        }
+        isSwitching = true;
+        switchStartTime = now;
+        DEBUG_PRINTLN(F("[CleaningMode] Phase 0 done — 500 ms switch gap."));
+    }
+
+    if (isSwitching && (now - switchStartTime >= RELAY_SWITCH_DELAY_MS))
+    {
+        // Gap elapsed — start phase 1
+        if (relayMgr)
+        {
+            relayMgr->setRelay(2, true);
+            relayMgr->setRelay(3, true);
+        }
+        isSwitching = false;
+        cleaningPhase = 1;
+        phaseStartTime = now;
+        DEBUG_PRINTLN(F("[CleaningMode] Phase 1 started (relays 2+3)."));
+    }
+
+    // ===== Both phases complete =====
+    if (totalElapsed >= TOTAL_DURATION_MS)
     {
         if (relayMgr)
         {
@@ -84,11 +128,12 @@ bool CleaningMode::update()
 
         isDoneDelay = true;
         cleaningDoneTime = millis();
-        return false; // wait for delay
+        return false; // wait for banner delay
     }
 
-    uint8_t remainingSeconds = (CLEANING_DURATION_MS - elapsed + 999) / 1000;
-    uint8_t progress = (elapsed * 100) / CLEANING_DURATION_MS;
+    // ===== Progress reporting =====
+    uint8_t remainingSeconds = (TOTAL_DURATION_MS - totalElapsed + 999) / 1000;
+    uint8_t progress = (uint8_t)((totalElapsed * 100UL) / TOTAL_DURATION_MS);
 
     if (displayMgr)
     {
@@ -107,6 +152,8 @@ bool CleaningMode::update()
     return false; // still running
 }
 
+// ===== Cancel =====
+
 void CleaningMode::cancel()
 {
     if (relayMgr)
@@ -114,7 +161,7 @@ void CleaningMode::cancel()
         relayMgr->stopAll();
     }
 
-    DEBUG_PRINTLN(F("[CleaningMode] Cancelled by user"));
+    DEBUG_PRINTLN(F("[CleaningMode] Cancelled by user."));
 
     if (bleMgr)
     {

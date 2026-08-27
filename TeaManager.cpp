@@ -15,7 +15,7 @@ namespace
     constexpr float CUP_REMOVED_THRESHOLD = 0.30f;         // weight must drop below 30% of finished weight
     constexpr unsigned long CUP_WARNING_TIMEOUT_MS = 5000; // auto-dismiss warning after 5s
     constexpr float DEFAULT_MIN_CUP_WEIGHT = 50.0f;        // default minimum cup weight in grams
-
+    constexpr unsigned long CUP_SETTLE_DELAY_MS = 1000;    // 1 s settling delay after cup placed
 } // anonymous namespace
 
 // ===== Lifecycle =====
@@ -41,7 +41,9 @@ TeaManager::TeaManager()
       cupWarningStartTime(0),
       previewButtonIndex(-1),
       previewStartTime(0),
-      activeStrategy(nullptr)
+      activeStrategy(nullptr),
+      pendingRecipe({0, 0, 0, 0}),
+      cupDetectedTime(0)
 {
 }
 
@@ -115,10 +117,46 @@ void TeaManager::update()
 
     case TeaState::CUP_WARNING:
     {
-        // Auto-dismiss after timeout
+        // Auto-dismiss after timeout (only for cup-removed-mid-dispense warning)
         if (millis() - cupWarningStartTime >= CUP_WARNING_TIMEOUT_MS)
         {
             dismissCupWarning();
+        }
+        return;
+    }
+
+    case TeaState::WAITING_FOR_CUP:
+    {
+        if (!sensorMgr)
+            return;
+
+        float currentWeight = sensorMgr->getWeight();
+        unsigned long now = millis();
+
+        if (currentWeight >= minCupWeight)
+        {
+            // Cup just detected — start / continue settle timer
+            if (cupDetectedTime == 0)
+            {
+                cupDetectedTime = now;
+                DEBUG_PRINTLN(F("[TeaManager] Cup detected — waiting 1 s before brewing"));
+            }
+            else if (now - cupDetectedTime >= CUP_SETTLE_DELAY_MS)
+            {
+                // Delay expired — kick off the actual brew
+                DEBUG_PRINTLN(F("[TeaManager] Cup settle delay done — starting dispensing"));
+                currentState = TeaState::IDLE; // reset so startMakingTea accepts the call
+                startMakingTea(pendingRecipe);
+            }
+        }
+        else
+        {
+            // Cup removed again — reset the settle timer
+            if (cupDetectedTime != 0)
+            {
+                DEBUG_PRINTLN(F("[TeaManager] Cup removed again — resetting settle timer"));
+                cupDetectedTime = 0;
+            }
         }
         return;
     }
@@ -197,21 +235,21 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
         float currentWeight = sensorMgr->getWeight();
         if (currentWeight < minCupWeight)
         {
-            DEBUG_PRINTF("[TeaManager] No cup detected (weight: %.1fg, min: %.1fg)\n",
+            DEBUG_PRINTF("[TeaManager] No cup detected (weight: %.1fg, min: %.1fg) — waiting\n",
                          currentWeight, minCupWeight);
 
-            cupWarningIsCupRemoved = false;
-            cupWarningStartTime = millis();
-            currentState = TeaState::CUP_WARNING;
+            pendingRecipe = recipe;
+            cupDetectedTime = 0;
+            currentState = TeaState::WAITING_FOR_CUP;
 
             if (displayMgr)
             {
-                displayMgr->showNoCupWarningScreen();
+                displayMgr->showPlaceCupScreen();
             }
 
             if (bleMgr)
             {
-                bleMgr->sendError("NO_CUP", "No cup detected on the scale");
+                bleMgr->sendError("NO_CUP", "No cup detected — waiting for cup placement");
             }
             return;
         }
@@ -464,11 +502,11 @@ void TeaManager::saveCupWeight()
 
     if (sensorMgr)
     {
-        float currentWeight = sensorMgr->getWeight();
+        float currentWeight = sensorMgr->getWeight() - 1.0f;
         if (currentWeight > 0.0f)
         {
             setMinCupWeight(currentWeight);
-            DEBUG_PRINTF("[TeaManager] Cup weight saved: %.1fg\n", currentWeight);
+            DEBUG_PRINTF("[TeaManager] Cup weight saved: %.1fg (raw - 1g)\n", currentWeight);
         }
         else
         {
@@ -677,6 +715,9 @@ void TeaManager::updateDisplay()
         {
             displayMgr->showNoCupWarningScreen();
         }
+        break;
+    case TeaState::WAITING_FOR_CUP:
+        displayMgr->showPlaceCupScreen();
         break;
     default:
         break;

@@ -781,3 +781,50 @@ void DisplayManager::showCupRemovedWarningScreen()
 
     display.display();
 }
+
+//  ┌────────────────────────────┐
+//  │                            │
+//  │   ┌──────────────────────┐ │   Badge: "PLEASE PLACE CUP"
+//  │   └──────────────────────┘ │
+//  │                            │
+//  │     Waiting for cup...     │   Footer hint
+//  │                            │
+//  └────────────────────────────┘
+void DisplayManager::showPlaceCupScreen()
+{
+    if (!ready)
+        return;
+
+    display.clearDisplay();
+
+    constexpr int badgeW = 120;
+    constexpr int badgeH = 17;
+    constexpr int textHeight = 8;
+    constexpr int gap = 6;
+    constexpr int totalHeight = badgeH + gap + textHeight;
+
+    constexpr int badgeY = (SCREEN_HEIGHT - totalHeight) / 2;
+    constexpr int textY = badgeY + badgeH + gap;
+    constexpr int badgeX = (SCREEN_WIDTH - badgeW) / 2;
+
+    display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
+
+    constexpr char msg[] = "PLACE CUP TO BREW";
+    constexpr int msgWidth = (sizeof(msg) - 1) * 6;
+    constexpr int msgX = (SCREEN_WIDTH - msgWidth) / 2;
+
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+    display.setCursor(msgX, badgeY + 5);
+    display.print(msg);
+
+    constexpr char footer[] = "Waiting for cup...";
+    constexpr int footerW2 = (sizeof(footer) - 1) * 6;
+    constexpr int footerX2 = (SCREEN_WIDTH - footerW2) / 2;
+
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(footerX2, textY);
+    display.print(footer);
+
+    display.display();
+}

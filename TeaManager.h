@@ -87,6 +87,10 @@ private:
     bool cupWarningIsCupRemoved; // true = cup removed mid-dispense, false = no cup at start
     unsigned long cupWarningStartTime;
 
+    // WAITING_FOR_CUP state
+    TeaRecipe pendingRecipe;       // recipe to start once cup is placed
+    unsigned long cupDetectedTime; // timestamp when cup was first detected (for 1 s delay)
+
     void loadDispensingMode();
     void saveDispensingMode(bool isWeight);
     void loadMinCupWeight();
