@@ -9,11 +9,11 @@ enum class TeaState : uint8_t
     IDLE,
     PREVIEW,
     MAKING,
+    FINISHED,
     CLEANING,
     CALIBRATION,
-    FINISHED,
     CUP_WARNING,
-    WAITING_FOR_CUP, // No cup at brew-start; waiting for user to place cup
+    WAITING_FOR_CUP,
     ERROR
 };
 
@@ -67,10 +67,10 @@ inline TeaRecipe scaleRecipeToTarget(const TeaRecipe &src, int targetMl)
         return src;
 
     TeaRecipe scaled;
-    scaled.tea           = (src.tea           * targetMl) / total;
+    scaled.tea = (src.tea * targetMl) / total;
     scaled.condensedMilk = (src.condensedMilk * targetMl) / total;
-    scaled.evaporatedMilk= (src.evaporatedMilk* targetMl) / total;
-    scaled.milk          = (src.milk          * targetMl) / total;
+    scaled.evaporatedMilk = (src.evaporatedMilk * targetMl) / total;
+    scaled.milk = (src.milk * targetMl) / total;
 
     // Distribute rounding remainder to the largest ingredient
     int remainder = targetMl - (scaled.tea + scaled.condensedMilk +
@@ -86,10 +86,14 @@ inline TeaRecipe scaleRecipeToTarget(const TeaRecipe &src, int targetMl)
             if (vals[i] > vals[maxIdx])
                 maxIdx = i;
         }
-        if      (maxIdx == 0) scaled.tea            += remainder;
-        else if (maxIdx == 1) scaled.condensedMilk  += remainder;
-        else if (maxIdx == 2) scaled.evaporatedMilk += remainder;
-        else                  scaled.milk            += remainder;
+        if (maxIdx == 0)
+            scaled.tea += remainder;
+        else if (maxIdx == 1)
+            scaled.condensedMilk += remainder;
+        else if (maxIdx == 2)
+            scaled.evaporatedMilk += remainder;
+        else
+            scaled.milk += remainder;
     }
 
     return scaled;
