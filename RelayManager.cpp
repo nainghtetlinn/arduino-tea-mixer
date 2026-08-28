@@ -61,7 +61,7 @@ void RelayManager::stopAll()
     {
         setRelay(i, false);
     }
-    DEBUG_PRINTLN(F("[RelayManager] Emergency stop - all relays OFF"));
+    DEBUG_PRINTLN(F("[RelayManager] All relays OFF"));
 }
 
 bool RelayManager::isRelayActive(uint8_t index) const
