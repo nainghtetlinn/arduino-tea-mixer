@@ -34,9 +34,11 @@ namespace BleCommand
     constexpr const char *GET_BUTTONS_INFO = "GET_BUTTONS_INFO";
     constexpr const char *SET_BUTTON_INFO = "SET_BUTTON_INFO";
     constexpr const char *GET_DEVICE_INFO = "GET_DEVICE_INFO";
+    constexpr const char *GET_TEMPERATURE = "GET_TEMPERATURE";
+    constexpr const char *GET_WEIGHT = "GET_WEIGHT";
     constexpr const char *SET_DISPENSING_MODE = "SET_DISPENSING_MODE";
-    constexpr const char *GET_TARGET_ML = "GET_TARGET_ML";
-    constexpr const char *SET_TARGET_ML = "SET_TARGET_ML";
+    constexpr const char *SET_TARGET_TOTAL_ML = "SET_TARGET_TOTAL_ML";
+    constexpr const char *CANCEL_CLEANING = "CANCEL_CLEANING";
 } // namespace BleCommand
 
 // =========================================================================
@@ -44,16 +46,21 @@ namespace BleCommand
 // =========================================================================
 namespace BleResponse
 {
+    constexpr const char *ERROR = "ERROR";
+
     constexpr const char *BUTTONS_INFO = "BUTTONS_INFO";
     constexpr const char *DEVICE_INFO = "DEVICE_INFO";
+    constexpr const char *TEMPERATURE = "TEMPERATURE";
+    constexpr const char *WEIGHT = "WEIGHT";
     constexpr const char *DISPENSING_MODE = "DISPENSING_MODE";
-    constexpr const char *TARGET_ML = "TARGET_ML";
+    constexpr const char *TARGET_TOTAL_ML = "TARGET_TOTAL_ML";
+
     constexpr const char *TEA_START = "TEA_START";
     constexpr const char *TEA_PROGRESS = "TEA_PROGRESS";
     constexpr const char *TEA_FINISH = "TEA_FINISH";
     constexpr const char *CUP_REMOVED = "CUP_REMOVED";
     constexpr const char *CUP_WARNING = "CUP_WARNING";
-    constexpr const char *ERROR = "ERROR";
+
     constexpr const char *CLEANING_START = "CLEANING_START";
     constexpr const char *CLEANING_PROGRESS = "CLEANING_PROGRESS";
     constexpr const char *CLEANING_FINISHED = "CLEANING_FINISHED";

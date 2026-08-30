@@ -24,15 +24,11 @@ public:
     void update();
 
     void startMakingTea(const TeaRecipe &recipe);
+    void dismissCupWarning();
 
-    // Preview flow — shows recipe before brewing
     void previewRecipe(int btnIndex, const ButtonInfo &info);
     void confirmBrew();
     void cancelPreview();
-    int getPreviewButtonIndex() const;
-
-    // Emergency stop - delegates to RelayManager::stopAll()
-    void stopAll();
 
     // Cleaning mode
     void startCleaningMode();
@@ -44,26 +40,22 @@ public:
     void resetCalibrationWeight();
     void toggleDispensingMode();
     void setDispensingMode(bool weightMode);
-    bool isWeightMode() const;
 
     // Cup weight calibration (within calibration mode)
     void startCupWeightCalibration();
-    void saveCupWeight();
-    bool isCalibrating() const;
+    void finishCupWeightCalibration();
+    void cancelCupWeightCalibration();
 
-    // Cup weight threshold (NVS-configurable)
-    float getMinCupWeight() const;
-    void setMinCupWeight(float weight);
-
-    // Target total ml (NVS-configurable, updated via BLE)
-    int getTargetTotalMl() const;
+    // Target total ml (NVS-configurable)
     void setTargetTotalMl(int ml);
 
-    // Dismiss CUP_WARNING state
-    void dismissCupWarning();
-
+    // getters
+    int getPreviewButtonIndex() const;
+    bool isWeightMode() const;
+    bool isCalibratingCupWeight() const;
+    float getMinCupWeight() const;
+    int getTargetTotalMl() const;
     TeaState getState() const;
-    uint8_t getProgress() const;
 
     // BLE connected screen overlay (3-second transient display)
     void showBleConnected();
@@ -83,24 +75,16 @@ private:
     float finishedWeight;
     bool weightDispensingMode;
     bool calibratingCup;
-    unsigned long bleConnectedUntil;
+    unsigned long bleConnectedStartTime;
 
     // Cup presence detection
     float minCupWeight;
-    float weightBeforeDispensing;
     unsigned long cupWarningStartTime;
     int targetTotalMl; // target total ml; recipe is scaled to this before dispensing
 
     // WAITING_FOR_CUP state
     TeaRecipe pendingRecipe;       // recipe to start once cup is placed
     unsigned long cupDetectedTime; // timestamp when cup was first detected (for 1 s delay)
-
-    void loadDispensingMode();
-    void saveDispensingMode(bool isWeight);
-    void loadMinCupWeight();
-    void saveMinCupWeight(float weight);
-    void loadTargetTotalMl();
-    void saveTargetTotalMl(int ml);
 
     // --- Preview state ---
     ButtonInfo previewInfo;
@@ -115,7 +99,20 @@ private:
     // --- Cleaning mode ---
     CleaningMode cleaningMode;
 
+    // Helpers
     void finishDispensing();
+    void calculateProgress();
+    // Emergency stop - delegates to RelayManager::stopAll()
+    // void stopAll();
+    // uint8_t getProgress() const;
+
+    // NVS persistence
+    void loadDispensingMode();
+    void saveDispensingMode(bool isWeight);
+    void loadMinCupWeight();
+    void saveMinCupWeight(float weight);
+    void loadTargetTotalMl();
+    void saveTargetTotalMl(int ml);
 
     // JSON reporting
     void sendTeaStartJSON();
@@ -123,8 +120,6 @@ private:
     void sendTeaFinishedJSON();
     void sendCupRemovedJSON();
     void sendCupRemovedWarningJSON();
-    void calculateProgress();
-    void updateDisplay();
 };
 
 #endif

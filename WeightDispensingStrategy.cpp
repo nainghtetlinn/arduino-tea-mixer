@@ -38,11 +38,6 @@ void WeightDispensingStrategy::start(const TeaRecipe &recipe)
 
 bool WeightDispensingStrategy::update(TeaRecipe &dispensed)
 {
-    if (currentPhase == DispensingPhase::DONE)
-    {
-        return true;
-    }
-
     // Safety timeout check
     if (DISPENSING_SAFETY_TIMEOUT_MS > 0)
     {
@@ -133,6 +128,7 @@ bool WeightDispensingStrategy::update(TeaRecipe &dispensed)
         }
         else
         {
+            stop();
             return true;
         }
     }

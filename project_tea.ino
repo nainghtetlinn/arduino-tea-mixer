@@ -46,28 +46,6 @@ void setup()
                 buttonManager.setButtonInfo(id, info);
                 bluetoothManager.sendJSON(BleResponse::BUTTONS_INFO, buttonManager.getButtonsInfoJSON());
             }
-            else if (type == BleCommand::SET_DISPENSING_MODE)
-            {
-                bool weightMode = payload["weightMode"] | teaManager.isWeightMode();
-                teaManager.setDispensingMode(weightMode);
-                JsonDocument resp;
-                resp["weightMode"] = teaManager.isWeightMode();
-                bluetoothManager.sendJSON(BleResponse::DISPENSING_MODE, resp);
-            }
-            else if (type == BleCommand::GET_TARGET_ML)
-            {
-                JsonDocument resp;
-                resp["targetMl"] = teaManager.getTargetTotalMl();
-                bluetoothManager.sendJSON(BleResponse::TARGET_ML, resp);
-            }
-            else if (type == BleCommand::SET_TARGET_ML)
-            {
-                int ml = payload["targetMl"] | teaManager.getTargetTotalMl();
-                teaManager.setTargetTotalMl(ml);
-                JsonDocument resp;
-                resp["targetMl"] = teaManager.getTargetTotalMl();
-                bluetoothManager.sendJSON(BleResponse::TARGET_ML, resp);
-            }
             else if (type == BleCommand::GET_DEVICE_INFO)
             {
                 JsonDocument resp;
@@ -76,9 +54,42 @@ void setup()
                 resp["calibrationFactor"] = sensorManager.getCalibrationFactor();
                 resp["cupWeight"] = teaManager.getMinCupWeight();
                 resp["weightMode"] = teaManager.isWeightMode();
-                resp["targetMl"] = teaManager.getTargetTotalMl();
+                resp["targetTotalMl"] = teaManager.getTargetTotalMl();
                 bluetoothManager.sendJSON(BleResponse::DEVICE_INFO, resp);
             }
+            else if (type == BleCommand::GET_TEMPERATURE)
+            {
+                JsonDocument resp;
+                resp["temperature"] = sensorManager.getTemperature();
+                bluetoothManager.sendJSON(BleResponse::TEMPERATURE, resp);
+            }
+            else if (type == BleCommand::GET_WEIGHT)
+            {
+                JsonDocument resp;
+                resp["weight"] = sensorManager.getWeight();
+                bluetoothManager.sendJSON(BleResponse::WEIGHT, resp);
+            }
+            else if (type == BleCommand::SET_DISPENSING_MODE)
+            {
+                bool weightMode = payload["weightMode"] | teaManager.isWeightMode();
+                teaManager.setDispensingMode(weightMode);
+                JsonDocument resp;
+                resp["weightMode"] = teaManager.isWeightMode();
+                bluetoothManager.sendJSON(BleResponse::DISPENSING_MODE, resp);
+            }
+            else if (type == BleCommand::SET_TARGET_TOTAL_ML)
+            {
+                int ml = payload["targetTotalMl"] | teaManager.getTargetTotalMl();
+                teaManager.setTargetTotalMl(ml);
+                JsonDocument resp;
+                resp["targetTotalMl"] = teaManager.getTargetTotalMl();
+                bluetoothManager.sendJSON(BleResponse::TARGET_TOTAL_ML, resp);
+            }
+            else if (type == BleCommand::CANCEL_CLEANING)
+            {
+                teaManager.cancelCleaningMode();
+            }
+
             else
                 DEBUG_PRINTLN(F("Unknown Type"));
         });
@@ -101,9 +112,9 @@ void setup()
                 {
                     // Btn 1: toggle cup weight calibration
                     // First press enters "place cup" mode, second press saves the weight
-                    if (teaManager.isCalibrating())
+                    if (teaManager.isCalibratingCupWeight())
                     {
-                        teaManager.saveCupWeight();
+                        teaManager.finishCupWeightCalibration();
                     }
                     else
                     {
@@ -112,13 +123,27 @@ void setup()
                 }
                 else if (btnIndex == 1)
                 {
-                    // Btn 2: toggle dispensing mode (WEIGHT <-> TIME)
-                    teaManager.toggleDispensingMode();
+                    if (teaManager.isCalibratingCupWeight())
+                    {
+                        teaManager.cancelCupWeightCalibration();
+                    }
+                    else
+                    {
+                        // Btn 2: toggle dispensing mode (WEIGHT <-> TIME)
+                        teaManager.toggleDispensingMode();
+                    }
                 }
                 else if (btnIndex == 2)
                 {
-                    // Btn 3: tare (zero) the weight sensor
-                    teaManager.resetCalibrationWeight();
+                    if (teaManager.isCalibratingCupWeight())
+                    {
+                        teaManager.cancelCupWeightCalibration();
+                    }
+                    else
+                    {
+                        // Btn 3: tare (zero) the weight sensor
+                        teaManager.resetCalibrationWeight();
+                    }
                 }
             }
             else if (state == TeaState::CLEANING)
@@ -145,6 +170,10 @@ void setup()
                     ButtonInfo info = buttonManager.getButtonInfo(btnIndex);
                     teaManager.previewRecipe(btnIndex, info);
                 }
+            }
+            else if (state == TeaState::WAITING_FOR_CUP)
+            {
+                teaManager.cancelPreview();
             }
             else if (state == TeaState::CUP_WARNING)
             {
