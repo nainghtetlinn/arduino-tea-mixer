@@ -220,15 +220,6 @@ ButtonInfo ButtonManager::getButtonInfo(int index)
 
     prefs.end();
 
-    DEBUG_PRINTF(
-        "[ButtonManager] Button %d recipe (name=%s, tea=%d, cond=%d, evap=%d, milk=%d).\n",
-        index + 1,
-        info.name.c_str(),
-        info.recipe.tea,
-        info.recipe.condensedMilk,
-        info.recipe.evaporatedMilk,
-        info.recipe.milk);
-
     return info;
 }
 

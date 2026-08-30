@@ -53,6 +53,8 @@ void RelayManager::setRelay(uint8_t index, bool on)
     }
 
     relayActive[index] = on;
+
+    DEBUG_PRINTF("[RelayManager] Relay %d - %s\n", index, on ? "ON" : "OFF");
 }
 
 void RelayManager::stopAll()

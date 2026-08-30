@@ -39,7 +39,7 @@ void CleaningMode::start()
         relayMgr->setRelay(3, false);
     }
 
-    DEBUG_PRINTLN(F("[CleaningMode] Started phase 0 (relays 0+1)."));
+    DEBUG_PRINTLN(F("[CleaningMode] Phase 0 started (relays 0+1)."));
 
     if (bleMgr)
     {
@@ -84,7 +84,7 @@ bool CleaningMode::update()
                 }
                 isSwitching = true;
                 switchStartTime = now;
-                DEBUG_PRINTLN(F("[CleaningMode] Phase 0 done — 500 ms switch gap."));
+                DEBUG_PRINTLN(F("[CleaningMode] Phase 0 done."));
             }
         }
         else
@@ -98,7 +98,7 @@ bool CleaningMode::update()
                 }
                 isSwitching = false;
                 cleaningPhase = 1;
-                phaseStartTime = now; // not necessary
+                phaseStartTime = now; // unnecessary line
                 DEBUG_PRINTLN(F("[CleaningMode] Phase 1 started (relays 2+3)."));
             }
         }
