@@ -8,11 +8,10 @@ namespace
 {
     constexpr unsigned long PHASE_DURATION_MS = 30000;                 // 30 s per phase
     constexpr unsigned long TOTAL_DURATION_MS = PHASE_DURATION_MS * 2; // 60 s total
-    constexpr unsigned long COMPLETE_DISPLAY_MS = 3000;
-    constexpr unsigned long RELAY_SWITCH_DELAY_MS = 500;               // gap between phases
+    constexpr unsigned long COMPLETE_TIMEOUT_MS = 3000;
+    constexpr unsigned long RELAY_SWITCH_DELAY_MS = 500; // gap between phases
+    constexpr unsigned long PROGRESS_UPDATE_INTERVAL_MS = 1000;
 } // anonymous namespace
-
-// ===== Lifecycle =====
 
 void CleaningMode::begin(RelayManager *relay, DisplayManager *display, BluetoothManager *ble)
 {
@@ -20,8 +19,6 @@ void CleaningMode::begin(RelayManager *relay, DisplayManager *display, Bluetooth
     displayMgr = display;
     bleMgr = ble;
 }
-
-// ===== Start =====
 
 void CleaningMode::start()
 {
@@ -47,7 +44,6 @@ void CleaningMode::start()
     if (bleMgr)
     {
         JsonDocument doc;
-        doc["state"] = "CLEANING";
         doc["durationSeconds"] = TOTAL_DURATION_MS / 1000;
         bleMgr->sendJSON(BleResponse::CLEANING_START, doc);
     }
@@ -58,14 +54,12 @@ void CleaningMode::start()
     }
 }
 
-// ===== Update (call every loop tick) =====
-
 bool CleaningMode::update()
 {
     // --- Waiting for the "complete" banner to expire ---
     if (isDoneDelay)
     {
-        if (millis() - cleaningDoneTime >= COMPLETE_DISPLAY_MS)
+        if (millis() - cleaningDoneTime >= COMPLETE_TIMEOUT_MS)
         {
             return true;
         }
@@ -77,58 +71,64 @@ bool CleaningMode::update()
     unsigned long phaseElapsed = now - phaseStartTime;
 
     // ===== Phase transition: 0 → switching gap → 1 =====
-    if (cleaningPhase == 0 && !isSwitching && phaseElapsed >= PHASE_DURATION_MS)
+    if (cleaningPhase == 0)
     {
-        // Turn off phase-0 relays and begin the switch gap
-        if (relayMgr)
+        if (!isSwitching)
         {
-            relayMgr->setRelay(0, false);
-            relayMgr->setRelay(1, false);
+            if (phaseElapsed >= PHASE_DURATION_MS)
+            {
+                if (relayMgr)
+                {
+                    relayMgr->setRelay(0, false);
+                    relayMgr->setRelay(1, false);
+                }
+                isSwitching = true;
+                switchStartTime = now;
+                DEBUG_PRINTLN(F("[CleaningMode] Phase 0 done — 500 ms switch gap."));
+            }
         }
-        isSwitching = true;
-        switchStartTime = now;
-        DEBUG_PRINTLN(F("[CleaningMode] Phase 0 done — 500 ms switch gap."));
+        else
+        {
+            if (now - switchStartTime >= RELAY_SWITCH_DELAY_MS)
+            {
+                if (relayMgr)
+                {
+                    relayMgr->setRelay(2, true);
+                    relayMgr->setRelay(3, true);
+                }
+                isSwitching = false;
+                cleaningPhase = 1;
+                phaseStartTime = now; // not necessary
+                DEBUG_PRINTLN(F("[CleaningMode] Phase 1 started (relays 2+3)."));
+            }
+        }
     }
-
-    if (isSwitching && (now - switchStartTime >= RELAY_SWITCH_DELAY_MS))
+    else
     {
-        // Gap elapsed — start phase 1
-        if (relayMgr)
+        if (totalElapsed >= TOTAL_DURATION_MS)
         {
-            relayMgr->setRelay(2, true);
-            relayMgr->setRelay(3, true);
+            if (relayMgr)
+            {
+                relayMgr->stopAll();
+            }
+
+            DEBUG_PRINTLN(F("[CleaningMode] Finished successfully."));
+
+            if (bleMgr)
+            {
+                JsonDocument emptyPayload;
+                bleMgr->sendJSON(BleResponse::CLEANING_FINISHED, emptyPayload);
+            }
+
+            if (displayMgr)
+            {
+                displayMgr->showCleaningCompleteScreen();
+            }
+
+            isDoneDelay = true;
+            cleaningDoneTime = now;
+            return false; // wait for banner delay
         }
-        isSwitching = false;
-        cleaningPhase = 1;
-        phaseStartTime = now;
-        DEBUG_PRINTLN(F("[CleaningMode] Phase 1 started (relays 2+3)."));
-    }
-
-    // ===== Both phases complete =====
-    if (totalElapsed >= TOTAL_DURATION_MS)
-    {
-        if (relayMgr)
-        {
-            relayMgr->stopAll();
-        }
-
-        DEBUG_PRINTLN(F("[CleaningMode] Finished successfully."));
-
-        if (bleMgr)
-        {
-            JsonDocument doc;
-            doc["status"] = "COMPLETE";
-            bleMgr->sendJSON(BleResponse::CLEANING_FINISHED, doc);
-        }
-
-        if (displayMgr)
-        {
-            displayMgr->showCleaningCompleteScreen();
-        }
-
-        isDoneDelay = true;
-        cleaningDoneTime = millis();
-        return false; // wait for banner delay
     }
 
     // ===== Progress reporting =====
@@ -140,7 +140,7 @@ bool CleaningMode::update()
         displayMgr->showCleaningProgressScreen(remainingSeconds, progress);
     }
 
-    if (bleMgr && (now - lastProgressUpdate >= 1000))
+    if (bleMgr && (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL_MS))
     {
         lastProgressUpdate = now;
         JsonDocument doc;
@@ -151,8 +151,6 @@ bool CleaningMode::update()
 
     return false; // still running
 }
-
-// ===== Cancel =====
 
 void CleaningMode::cancel()
 {
@@ -165,8 +163,7 @@ void CleaningMode::cancel()
 
     if (bleMgr)
     {
-        JsonDocument doc;
-        doc["status"] = "CANCELLED";
-        bleMgr->sendJSON(BleResponse::CLEANING_CANCELLED, doc);
+        JsonDocument emptyPayload;
+        bleMgr->sendJSON(BleResponse::CLEANING_CANCELLED, emptyPayload);
     }
 }
