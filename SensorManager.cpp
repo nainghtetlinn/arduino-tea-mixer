@@ -21,7 +21,6 @@ SensorManager::SensorManager()
     : oneWire(PIN_ONE_WIRE),
       sensors(&oneWire),
       lastSensorUpdate(0),
-      newDataAvailable(false),
       currentTemperature(0.0f),
       currentWeight(0.0f),
       activeCalibrationFactor(DEFAULT_CALIBRATION_FACTOR)
@@ -38,8 +37,7 @@ void SensorManager::begin()
     scale.set_scale(activeCalibrationFactor);
     scale.tare();
 
-    DEBUG_PRINT(F("[SensorManager] Initialized with calibration factor: "));
-    DEBUG_PRINTLN(activeCalibrationFactor);
+    DEBUG_PRINTLN(F("[SensorManager] Initialized successfully."));
 }
 
 void SensorManager::update()
@@ -54,12 +52,10 @@ void SensorManager::update()
         currentTemperature = sensors.getTempCByIndex(0);
 
         currentWeight = scale.get_units();
-
-        newDataAvailable = true;
     }
 }
 
-void SensorManager::startCalibrationZero()
+void SensorManager::zeroTare()
 {
     scale.tare(10);
     DEBUG_PRINTLN(F("[SensorManager] Zero tare completed."));
@@ -98,16 +94,6 @@ float SensorManager::getWeight() const
     return currentWeight;
 }
 
-bool SensorManager::isDataNew() const
-{
-    return newDataAvailable;
-}
-
-void SensorManager::clearDataNew()
-{
-    newDataAvailable = false;
-}
-
 void SensorManager::loadSavedCalibrationFactor()
 {
     Preferences prefs;
@@ -119,6 +105,7 @@ void SensorManager::loadSavedCalibrationFactor()
     {
         activeCalibrationFactor = DEFAULT_CALIBRATION_FACTOR;
     }
+    DEBUG_PRINTF("[TeaManager] Loaded calibration factor from NVS: %.1fg\n", activeCalibrationFactor);
 }
 
 void SensorManager::saveCalibrationFactor(float newFactor)

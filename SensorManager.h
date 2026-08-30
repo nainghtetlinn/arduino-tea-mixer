@@ -16,11 +16,8 @@ public:
     float getTemperature() const;
     float getWeight() const;
 
-    bool isDataNew() const;
-    void clearDataNew();
-
     // --- Calibration API ---
-    void startCalibrationZero();
+    void zeroTare();
     bool finishCalibrationWeight(float knownWeightGrams);
     float getCalibrationFactor() const;
 
@@ -30,7 +27,6 @@ private:
     HX711 scale;
 
     unsigned long lastSensorUpdate;
-    bool newDataAvailable;
     float currentTemperature;
     float currentWeight;
     float activeCalibrationFactor;
