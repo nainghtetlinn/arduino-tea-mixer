@@ -174,7 +174,9 @@ void DisplayManager::showIdleScreen(const String &btn1, const String &btn2, cons
 
     // ===== Temperature — right-aligned in header =====
     char tempBuf[8];
-    snprintf(tempBuf, sizeof(tempBuf), "%d\xF8""C", (int)temperature);
+    snprintf(tempBuf, sizeof(tempBuf), "%d\xF8"
+                                       "C",
+             (int)temperature);
     int tempWidth = strlen(tempBuf) * 6;
     int rightCursor = SCREEN_WIDTH - tempWidth - 2;
 
@@ -577,17 +579,25 @@ void DisplayManager::showCalibrationScreen(float temperature, float weight, bool
         const int wWidth = strlen(wBuf) * 12; // textSize 2 = 12px per char
         const int wX = (SCREEN_WIDTH - wWidth) / 2;
 
-        display.setCursor(wX, 26);
+        display.setCursor(wX, 24);
         display.print(wBuf);
 
-        // --- Footer hint ---
+        // --- Footer hints ---
         display.setTextSize(1);
-        constexpr char hint[] = "Press B1 to save";
-        constexpr int hintW = (sizeof(hint) - 1) * 6;
-        constexpr int hintX = (SCREEN_WIDTH - hintW) / 2;
 
-        display.setCursor(hintX, 56);
-        display.print(hint);
+        constexpr char hintSave[] = "Press B1 to save";
+        constexpr int saveW = (sizeof(hintSave) - 1) * 6;
+        constexpr int saveX = (SCREEN_WIDTH - saveW) / 2;
+
+        display.setCursor(saveX, 47);
+        display.print(hintSave);
+
+        constexpr char hintCancel[] = "B2 or B3 to cancel";
+        constexpr int cancelW = (sizeof(hintCancel) - 1) * 6;
+        constexpr int cancelX = (SCREEN_WIDTH - cancelW) / 2;
+
+        display.setCursor(cancelX, 56);
+        display.print(hintCancel);
 
         display.display();
         return;
@@ -698,16 +708,14 @@ void DisplayManager::showBleConnectedScreen()
     display.display();
 }
 
-
-
 //  ┌────────────────────────────┐
-//  │                            │  y=0..14   Empty space
-//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=15      Badge top (112x17 rounded rect)
-//  │  █   ! CUP REMOVED !    █  │  y=20      Inverted text (centered)
-//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=31      Badge bottom
-//  │                            │  y=32..39  Gap (8px)
-//  │    Dispensing stopped!     │  y=40      Footer text
-//  │                            │  y=48..63  Empty space
+//  │                            │  y=0..18   Empty space
+//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=19      Badge top (96x17 rounded rect)
+//  │  █     CUP REMOVED      █  │  y=24      Inverted text (centered)
+//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=35      Badge bottom
+//  │                            │  y=36..43  Gap (8px)
+//  │    Dispensing stopped!     │  y=44      Footer text
+//  │                            │  y=52..63  Empty space
 //  └────────────────────────────┘
 void DisplayManager::showCupRemovedWarningScreen()
 {
@@ -716,7 +724,7 @@ void DisplayManager::showCupRemovedWarningScreen()
 
     display.clearDisplay();
 
-    constexpr int badgeW = 112;
+    constexpr int badgeW = 96;
     constexpr int badgeH = 17;
     constexpr int textHeight = 8;
     constexpr int gap = 8;
@@ -728,7 +736,7 @@ void DisplayManager::showCupRemovedWarningScreen()
 
     display.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 4, SSD1306_WHITE);
 
-    constexpr char msg[] = "! CUP REMOVED !";
+    constexpr char msg[] = "CUP REMOVED";
     constexpr int msgWidth = (sizeof(msg) - 1) * 6;
     constexpr int msgX = (SCREEN_WIDTH - msgWidth) / 2;
 
@@ -749,12 +757,13 @@ void DisplayManager::showCupRemovedWarningScreen()
 }
 
 //  ┌────────────────────────────┐
-//  │                            │
-//  │   ┌──────────────────────┐ │   Badge: "PLEASE PLACE CUP"
-//  │   └──────────────────────┘ │
-//  │                            │
-//  │     Waiting for cup...     │   Footer hint
-//  │                            │
+//  │                            │  y=0..15   Empty space
+//  │  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  │  y=16      Badge top (120x17 rounded rect)
+//  │  █   PLACE CUP TO BREW  █  │  y=21      Inverted text (centered)
+//  │  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  │  y=32      Badge bottom
+//  │                            │  y=33..38  Gap (6px)
+//  │     Waiting for cup...     │  y=39      Footer text
+//  │                            │  y=47..63  Empty space
 //  └────────────────────────────┘
 void DisplayManager::showPlaceCupScreen()
 {
