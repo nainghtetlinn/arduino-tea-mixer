@@ -90,6 +90,8 @@ void BluetoothManager::begin()
 
     pService->start();
     pServer->getAdvertising()->start();
+
+    DEBUG_PRINTLN(F("[BluetoothManager] Initialized successfully."));
 }
 
 void BluetoothManager::attachOnWriteCallback(OnWriteCallback onWriteCb)
