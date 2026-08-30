@@ -105,7 +105,7 @@ void SensorManager::loadSavedCalibrationFactor()
     {
         activeCalibrationFactor = DEFAULT_CALIBRATION_FACTOR;
     }
-    DEBUG_PRINTF("[TeaManager] Loaded calibration factor from NVS: %.1fg\n", activeCalibrationFactor);
+    DEBUG_PRINTF("[SensorManager] Loaded calibration factor from NVS: %.1fg\n", activeCalibrationFactor);
 }
 
 void SensorManager::saveCalibrationFactor(float newFactor)
