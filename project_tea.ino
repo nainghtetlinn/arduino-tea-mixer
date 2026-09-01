@@ -85,6 +85,10 @@ void setup()
                 resp["targetTotalMl"] = teaManager.getTargetTotalMl();
                 bluetoothManager.sendJSON(BleResponse::TARGET_TOTAL_ML, resp);
             }
+            else if (type == BleCommand::START_CLEANING)
+            {
+                teaManager.startCleaningMode();
+            }
             else if (type == BleCommand::CANCEL_CLEANING)
             {
                 teaManager.cancelCleaningMode();

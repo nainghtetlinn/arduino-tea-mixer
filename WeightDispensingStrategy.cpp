@@ -128,7 +128,6 @@ bool WeightDispensingStrategy::update(TeaRecipe &dispensed)
         }
         else
         {
-            stop();
             return true;
         }
     }

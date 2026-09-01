@@ -323,6 +323,7 @@ void TeaManager::dismissCupWarning()
 // private helper
 void TeaManager::finishDispensing()
 {
+    activeStrategy->stop();
     activeStrategy = nullptr;
 
     if (displayMgr)

@@ -79,7 +79,8 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe)
     {
         if (relayDuration[i] > 0)
         {
-            sortedOrder[sortedCount++] = i;
+            sortedOrder[sortedCount] = i;
+            sortedCount++;
         }
     }
 

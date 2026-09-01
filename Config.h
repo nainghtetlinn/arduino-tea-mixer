@@ -38,6 +38,7 @@ namespace BleCommand
     constexpr const char *GET_WEIGHT = "GET_WEIGHT";
     constexpr const char *SET_DISPENSING_MODE = "SET_DISPENSING_MODE";
     constexpr const char *SET_TARGET_TOTAL_ML = "SET_TARGET_TOTAL_ML";
+    constexpr const char *START_CLEANING = "START_CLEANING";
     constexpr const char *CANCEL_CLEANING = "CANCEL_CLEANING";
 } // namespace BleCommand
 
