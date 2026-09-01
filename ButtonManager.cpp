@@ -1,5 +1,4 @@
 #include "ButtonManager.h"
-#include "Config.h"
 #include <Preferences.h>
 
 namespace
@@ -23,13 +22,17 @@ namespace
 } // anonymous namespace
 
 ButtonManager::ButtonManager()
-    : btnPressCb(nullptr),
+    : bleMgr(nullptr),
+      btnPressCb(nullptr),
       combo13Cb(nullptr),
       combo12Cb(nullptr),
+      combo23Cb(nullptr),
       combo13HoldStartTime(0),
       combo13Triggered(false),
       combo12HoldStartTime(0),
-      combo12Triggered(false)
+      combo12Triggered(false),
+      combo23HoldStartTime(0),
+      combo23Triggered(false)
 {
     suppressClick[0] = false;
     suppressClick[1] = false;
@@ -39,8 +42,9 @@ ButtonManager::ButtonManager()
     buttons[2] = OneButton(PIN_BTN_3, true, false);
 }
 
-void ButtonManager::begin()
+void ButtonManager::begin(BluetoothManager *ble)
 {
+    bleMgr = ble;
     buttons[0].attachClick(
         [](void *ctx)
         {
@@ -78,6 +82,11 @@ void ButtonManager::attachCalibrationComboCallback(ButtonComboCallback comboCall
     combo12Cb = comboCallback;
 }
 
+void ButtonManager::attachTargetMlComboCallback(ButtonComboCallback comboCallback)
+{
+    combo23Cb = comboCallback;
+}
+
 void ButtonManager::update()
 {
     for (int i = 0; i < BUTTON_COUNT; i++)
@@ -89,70 +98,60 @@ void ButtonManager::update()
     bool b2Pressed = (digitalRead(PIN_BTN_2) == LOW);
     bool b3Pressed = (digitalRead(PIN_BTN_3) == LOW);
 
-    // --- Combo: Btn 1 + Btn 2 (Calibration Mode, 3s hold) ---
-    if (b1Pressed && b2Pressed && !b3Pressed)
-    {
-        if (combo12HoldStartTime == 0)
-        {
-            combo12HoldStartTime = millis();
-        }
-        else if (millis() - combo12HoldStartTime >= 3000 && !combo12Triggered)
-        {
-            combo12Triggered = true;
-            suppressClick[0] = true;
-            suppressClick[1] = true;
-            DEBUG_PRINTLN(F("[ButtonManager] Combo hold (Btn 1 + Btn 2 for 3s) detected!"));
-            if (combo12Cb)
-            {
-                combo12Cb();
-            }
-        }
-    }
-    else
-    {
-        combo12HoldStartTime = 0;
-        combo12Triggered = false;
-        if (!b1Pressed && !b3Pressed)
-        {
-            suppressClick[0] = false;
-        }
-        if (!b2Pressed)
-        {
-            suppressClick[1] = false;
-        }
-    }
+    // Combo: Btn 1 + Btn 2  (Calibration, 3 s hold)
+    updateCombo(b1Pressed, b2Pressed, b3Pressed, 0, 1,
+                combo12HoldStartTime, combo12Triggered, combo12Cb,
+                !b3Pressed, true);
 
-    // --- Combo: Btn 1 + Btn 3 (Cleaning Mode, 3s hold) ---
-    if (b1Pressed && b3Pressed && !b2Pressed)
+    // Combo: Btn 1 + Btn 3  (Cleaning, 3 s hold)
+    updateCombo(b1Pressed, b3Pressed, b2Pressed, 0, 2,
+                combo13HoldStartTime, combo13Triggered, combo13Cb,
+                !b2Pressed, true);
+
+    // Combo: Btn 2 + Btn 3  (Target ML, 3 s hold)
+    updateCombo(b2Pressed, b3Pressed, b1Pressed, 1, 2,
+                combo23HoldStartTime, combo23Triggered, combo23Cb,
+                !b1Pressed, !b1Pressed);
+}
+
+// Generic combo helper.
+// aPinHeld / bPinHeld  — the two buttons that must both be held.
+// thirdPinHeld         — must be false for the combo to arm.
+// suppressA/B          — suppressClick[] indices to set on trigger.
+// holdStart / triggered— per-combo state variables (passed by ref).
+// cb                   — callback fired once per hold event.
+// canClearA/B          — extra conditions under which suppress is released.
+void ButtonManager::updateCombo(bool aPinHeld, bool bPinHeld, bool thirdPinHeld,
+                                int suppressA, int suppressB,
+                                unsigned long &holdStart, bool &triggered,
+                                ButtonComboCallback cb,
+                                bool canClearA, bool canClearB)
+{
+    if (aPinHeld && bPinHeld && !thirdPinHeld)
     {
-        if (combo13HoldStartTime == 0)
+        if (holdStart == 0)
         {
-            combo13HoldStartTime = millis();
+            holdStart = millis();
         }
-        else if (millis() - combo13HoldStartTime >= 3000 && !combo13Triggered)
+        else if (millis() - holdStart >= 3000 && !triggered)
         {
-            combo13Triggered = true;
-            suppressClick[0] = true;
-            suppressClick[2] = true;
-            DEBUG_PRINTLN(F("[ButtonManager] Combo hold (Btn 1 + Btn 3 for 3s) detected!"));
-            if (combo13Cb)
+            triggered = true;
+            suppressClick[suppressA] = true;
+            suppressClick[suppressB] = true;
+            if (cb)
             {
-                combo13Cb();
+                cb();
             }
         }
     }
     else
     {
-        combo13HoldStartTime = 0;
-        combo13Triggered = false;
-        if (!b1Pressed && !b2Pressed)
-        {
-            suppressClick[0] = false;
-        }
-        if (!b3Pressed)
-        {
-            suppressClick[2] = false;
-        }
+        holdStart = 0;
+        triggered = false;
+        if (canClearA)
+            suppressClick[suppressA] = false;
+        if (canClearB)
+            suppressClick[suppressB] = false;
     }
 }
 
@@ -223,24 +222,6 @@ ButtonInfo ButtonManager::getButtonInfo(int index)
     return info;
 }
 
-JsonDocument ButtonManager::getButtonsInfoJSON()
-{
-    JsonDocument doc;
-
-    for (int i = 0; i < BUTTON_COUNT; i++)
-    {
-        ButtonInfo info = getButtonInfo(i);
-
-        char btnKey[8];
-        snprintf(btnKey, sizeof(btnKey), "btn%d", i);
-
-        JsonObject obj = doc[btnKey].to<JsonObject>();
-        info.toJson(obj);
-    }
-
-    return doc;
-}
-
 void ButtonManager::makeNvsKey(char *buffer, size_t bufferSize, int index, const char *field)
 {
     snprintf(buffer, bufferSize, "b%d_%s", index, field);
@@ -272,4 +253,27 @@ String ButtonManager::getButtonName(int index)
     String name = prefs.getString(key, defaultNames[index]);
     prefs.end();
     return name;
+}
+
+// ===== JSON Reporting =====
+
+void ButtonManager::sendButtonsInfoJSON()
+{
+    if (bleMgr)
+    {
+        JsonDocument doc;
+
+        for (int i = 0; i < BUTTON_COUNT; i++)
+        {
+            ButtonInfo info = getButtonInfo(i);
+
+            char btnKey[8];
+            snprintf(btnKey, sizeof(btnKey), "btn%d", i);
+
+            JsonObject obj = doc[btnKey].to<JsonObject>();
+            info.toJson(obj);
+        }
+
+        bleMgr->sendJSON(BleResponse::BUTTONS_INFO, doc);
+    }
 }

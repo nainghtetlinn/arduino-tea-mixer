@@ -22,6 +22,8 @@ public:
 
     void showCalibrationScreen(float temperature, float weight, bool weightMode, float cupWeight, bool calibratingCup);
 
+    void showTargetMlScreen(int targetMl);
+
     void showBleConnectedScreen();
 
     void showCupRemovedWarningScreen();

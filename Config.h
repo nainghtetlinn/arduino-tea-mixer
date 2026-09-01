@@ -53,8 +53,6 @@ namespace BleResponse
     constexpr const char *DEVICE_INFO = "DEVICE_INFO";
     constexpr const char *TEMPERATURE = "TEMPERATURE";
     constexpr const char *WEIGHT = "WEIGHT";
-    constexpr const char *DISPENSING_MODE = "DISPENSING_MODE";
-    constexpr const char *TARGET_TOTAL_ML = "TARGET_TOTAL_ML";
 
     constexpr const char *TEA_START = "TEA_START";
     constexpr const char *TEA_PROGRESS = "TEA_PROGRESS";

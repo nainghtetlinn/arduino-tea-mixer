@@ -1,5 +1,4 @@
 #include "TeaManager.h"
-#include "Config.h"
 #include "BluetoothManager.h"
 #include "ButtonManager.h"
 #include "DisplayManager.h"
@@ -121,6 +120,15 @@ void TeaManager::update()
         if (sensorMgr && displayMgr)
         {
             displayMgr->showCalibrationScreen(sensorMgr->getTemperature(), sensorMgr->getWeight(), weightDispensingMode, minCupWeight, calibratingCup);
+        }
+        return;
+    }
+
+    case TeaState::TARGET_ML:
+    {
+        if (displayMgr)
+        {
+            displayMgr->showTargetMlScreen(targetTotalMl);
         }
         return;
     }
@@ -352,24 +360,6 @@ void TeaManager::calculateProgress()
         currentProgress = constrain((totalCurrent * 100) / totalTarget, 0, 100);
 }
 
-// void TeaManager::stopAll()
-// {
-//     if (activeStrategy)
-//     {
-//         activeStrategy->stop();
-//         activeStrategy = nullptr;
-//     }
-//     else if (relayMgr)
-//     {
-//         relayMgr->stopAll();
-//     }
-
-//     currentState = TeaState::IDLE;
-//     currentProgress = 0;
-
-//     DEBUG_PRINTLN(F("[TeaManager] Emergency stop"));
-// }
-
 // ===== Recipe Preview Flow =====
 
 void TeaManager::previewRecipe(int btnIndex, const ButtonInfo &info)
@@ -459,6 +449,7 @@ void TeaManager::resetCalibrationWeight()
     if (sensorMgr)
     {
         sensorMgr->zeroTare();
+        sendDeviceInfoJSON();
     }
 }
 
@@ -469,6 +460,7 @@ void TeaManager::toggleDispensingMode()
 
     weightDispensingMode = !weightDispensingMode;
     saveDispensingMode(weightDispensingMode);
+    sendDeviceInfoJSON();
 
     DEBUG_PRINTF("[TeaManager] Toggle dispensing mode: %s\n",
                  weightDispensingMode ? "WEIGHT" : "TIME");
@@ -487,6 +479,8 @@ void TeaManager::setDispensingMode(bool isWeight)
     DEBUG_PRINTF("[TeaManager] Set dispensing mode: %s\n",
                  isWeight ? "WEIGHT" : "TIME");
 }
+
+// ===== Cup Weight Recording Mode =====
 
 void TeaManager::startCupWeightCalibration()
 {
@@ -508,6 +502,7 @@ void TeaManager::finishCupWeightCalibration()
         {
             minCupWeight = currentWeight;
             saveMinCupWeight(currentWeight);
+            sendDeviceInfoJSON();
         }
         else
         {
@@ -523,9 +518,10 @@ void TeaManager::cancelCupWeightCalibration()
     calibratingCup = false;
 }
 
+// will be called via ble
 void TeaManager::setTargetTotalMl(int ml)
 {
-    constexpr int MIN_ML = 200;
+    constexpr int MIN_ML = 100;
     constexpr int MAX_ML = 1000;
     if (ml < MIN_ML)
         ml = MIN_ML;
@@ -534,6 +530,51 @@ void TeaManager::setTargetTotalMl(int ml)
     targetTotalMl = ml;
     saveTargetTotalMl(ml);
 }
+
+// ===== Target Total ML Adjustment Mode =====
+
+void TeaManager::startTargetMlMode()
+{
+    if (currentState != TeaState::IDLE)
+        return;
+
+    currentState = TeaState::TARGET_ML;
+    DEBUG_PRINTF("[TeaManager] Entered TARGET_ML mode. Current value: %dml\n", targetTotalMl);
+}
+
+void TeaManager::exitTargetMlMode()
+{
+    if (currentState != TeaState::TARGET_ML)
+        return;
+
+    saveTargetTotalMl(targetTotalMl);
+    sendDeviceInfoJSON();
+
+    currentState = TeaState::IDLE;
+    DEBUG_PRINTF("[TeaManager] Exited TARGET_ML mode. Saved: %dml\n", targetTotalMl);
+}
+
+void TeaManager::incrementTargetMl()
+{
+    if (currentState != TeaState::TARGET_ML)
+        return;
+
+    constexpr int MAX_ML = 1000;
+    targetTotalMl = min(targetTotalMl + 10, MAX_ML);
+    DEBUG_PRINTF("[TeaManager] Target ML incremented to %dml\n", targetTotalMl);
+}
+
+void TeaManager::decrementTargetMl()
+{
+    if (currentState != TeaState::TARGET_ML)
+        return;
+
+    constexpr int MIN_ML = 100;
+    targetTotalMl = max(targetTotalMl - 10, MIN_ML);
+    DEBUG_PRINTF("[TeaManager] Target ML decremented to %dml\n", targetTotalMl);
+}
+
+// ===== Helpers =====
 
 void TeaManager::showBleConnected()
 {
@@ -575,11 +616,6 @@ TeaState TeaManager::getState() const
 {
     return currentState;
 }
-
-// uint8_t TeaManager::getProgress() const
-// {
-//     return currentProgress;
-// }
 
 // ===== NVS Persistence =====
 
@@ -638,6 +674,41 @@ void TeaManager::saveTargetTotalMl(int ml)
 }
 
 // ===== JSON Reporting =====
+
+void TeaManager::sendDeviceInfoJSON()
+{
+    if (bleMgr && sensorMgr)
+    {
+        JsonDocument doc;
+        doc["temperature"] = sensorMgr->getTemperature();
+        doc["weight"] = sensorMgr->getWeight();
+        doc["calibrationFactor"] = sensorMgr->getCalibrationFactor();
+        doc["cupWeight"] = getMinCupWeight();
+        doc["weightMode"] = isWeightMode();
+        doc["targetTotalMl"] = getTargetTotalMl();
+        bleMgr->sendJSON(BleResponse::DEVICE_INFO, doc);
+    }
+}
+
+void TeaManager::sendTemperatureJSON()
+{
+    if (bleMgr && sensorMgr)
+    {
+        JsonDocument doc;
+        doc["temperature"] = sensorMgr->getTemperature();
+        bleMgr->sendJSON(BleResponse::TEMPERATURE, doc);
+    }
+}
+
+void TeaManager::sendWeightJSON()
+{
+    if (bleMgr && sensorMgr)
+    {
+        JsonDocument doc;
+        doc["weight"] = sensorMgr->getWeight();
+        bleMgr->sendJSON(BleResponse::WEIGHT, doc);
+    }
+}
 
 void TeaManager::sendTeaStartJSON()
 {

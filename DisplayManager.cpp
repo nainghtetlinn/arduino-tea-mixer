@@ -803,3 +803,66 @@ void DisplayManager::showPlaceCupScreen()
 
     display.display();
 }
+
+//  ┌────────────────────────────┐
+//  │      Target Volume         │  y=2       Title (size 1, centered)
+//  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤  y=13      Dotted divider
+//  │                            │
+//  │          300 ml            │  y=22      Big value (size 3, centered)
+//  │                            │
+//  ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤  y=52      Dotted divider
+//  │  +10     -10     Save      │  y=56      Button hints (size 1)
+//  └────────────────────────────┘
+void DisplayManager::showTargetMlScreen(int targetMl)
+{
+    if (!ready)
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+
+    // ===== Title =====
+    constexpr char title[] = "Target Volume";
+    constexpr int titleWidth = (sizeof(title) - 1) * 6;
+    constexpr int titleX = (SCREEN_WIDTH - titleWidth) / 2;
+    display.setTextSize(1);
+    display.setCursor(titleX, 2);
+    display.print(title);
+
+    // Dotted divider under title
+    for (int x = 4; x < SCREEN_WIDTH - 4; x += 3)
+    {
+        display.drawPixel(x, 13, SSD1306_WHITE);
+    }
+
+    // ===== Large ml value =====
+    // Size-3 font: each char is 18px wide, 24px tall
+    char valBuf[10];
+    snprintf(valBuf, sizeof(valBuf), "%d ml", targetMl);
+    int valWidth = strlen(valBuf) * 18;
+    int valX = (SCREEN_WIDTH - valWidth) / 2;
+    display.setTextSize(3);
+    display.setCursor(valX, 20);
+    display.print(valBuf);
+
+    // Dotted divider above footer
+    for (int x = 4; x < SCREEN_WIDTH - 4; x += 3)
+    {
+        display.drawPixel(x, 51, SSD1306_WHITE);
+    }
+
+    // ===== Button hint footer =====
+    display.setTextSize(1);
+    display.setCursor(2, 55);
+    display.print(F("+10"));
+    constexpr char minusLabel[] = "-10";
+    constexpr int minusWidth = (sizeof(minusLabel) - 1) * 6;
+    display.setCursor((SCREEN_WIDTH - minusWidth) / 2, 55);
+    display.print(minusLabel);
+    constexpr char saveLabel[] = "Save";
+    constexpr int saveWidth = (sizeof(saveLabel) - 1) * 6;
+    display.setCursor(SCREEN_WIDTH - saveWidth - 2, 55);
+    display.print(saveLabel);
+
+    display.display();
+}

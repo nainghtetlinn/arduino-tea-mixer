@@ -4,6 +4,11 @@
 #include <ArduinoJson.h>
 #include "Config.h"
 #include "Models.h"
+#include "BluetoothManager.h"
+#include "ButtonManager.h"
+#include "DisplayManager.h"
+#include "RelayManager.h"
+#include "SensorManager.h"
 #include "WeightDispensingStrategy.h"
 #include "TimeDispensingStrategy.h"
 #include "CleaningMode.h"
@@ -49,6 +54,12 @@ public:
     // Target total ml (NVS-configurable)
     void setTargetTotalMl(int ml);
 
+    // Target ML adjustment mode (B2+B3 combo)
+    void startTargetMlMode();
+    void exitTargetMlMode();
+    void incrementTargetMl();
+    void decrementTargetMl();
+
     // getters
     int getPreviewButtonIndex() const;
     bool isWeightMode() const;
@@ -59,6 +70,10 @@ public:
 
     // BLE connected screen overlay (3-second transient display)
     void showBleConnected();
+
+    void sendDeviceInfoJSON();
+    void sendTemperatureJSON();
+    void sendWeightJSON();
 
 private:
     RelayManager *relayMgr;
@@ -115,6 +130,7 @@ private:
     void saveTargetTotalMl(int ml);
 
     // JSON reporting
+
     void sendTeaStartJSON();
     void sendTeaProgressJSON();
     void sendTeaFinishedJSON();

@@ -12,6 +12,7 @@ enum class TeaState : uint8_t
     FINISHED,
     CLEANING,
     CALIBRATION,
+    TARGET_ML,
     CUP_WARNING,
     WAITING_FOR_CUP,
     ERROR
