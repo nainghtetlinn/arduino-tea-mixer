@@ -2,6 +2,10 @@
 #define CLEANING_MODE_H
 
 #include <Arduino.h>
+#include "Config.h"
+#include "RelayManager.h"
+#include "DisplayManager.h"
+#include "BluetoothManager.h"
 
 // Forward declarations
 class RelayManager;

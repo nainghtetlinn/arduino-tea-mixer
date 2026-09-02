@@ -3,6 +3,7 @@
 
 #include <ArduinoJson.h>
 #include <OneButton.h>
+#include <Preferences.h>
 #include "Config.h"
 #include "Models.h"
 #include "BluetoothManager.h"
@@ -10,7 +11,7 @@
 typedef void (*ButtonPressCallback)(const int &btnIndex);
 typedef void (*ButtonComboCallback)();
 
-// Forward declarations to avoid circular includes
+// Forward declaration
 class BluetoothManager;
 
 class ButtonManager

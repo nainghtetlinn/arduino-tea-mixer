@@ -1,6 +1,4 @@
 #include "TimeDispensingStrategy.h"
-#include "RelayManager.h"
-#include "SensorManager.h"
 
 namespace
 {

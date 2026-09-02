@@ -1,8 +1,11 @@
 #ifndef WEIGHT_DISPENSING_STRATEGY_H
 #define WEIGHT_DISPENSING_STRATEGY_H
 
+#include <Arduino.h>
 #include "DispensingStrategy.h"
 #include "Config.h"
+#include "RelayManager.h"
+#include "SensorManager.h"
 
 class WeightDispensingStrategy : public DispensingStrategy
 {

@@ -1,6 +1,4 @@
 #include "WeightDispensingStrategy.h"
-#include "RelayManager.h"
-#include "SensorManager.h"
 
 namespace
 {

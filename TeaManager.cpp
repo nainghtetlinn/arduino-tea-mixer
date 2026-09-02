@@ -1,10 +1,4 @@
 #include "TeaManager.h"
-#include "BluetoothManager.h"
-#include "ButtonManager.h"
-#include "DisplayManager.h"
-#include "RelayManager.h"
-#include "SensorManager.h"
-#include <Preferences.h>
 
 namespace
 {
@@ -255,15 +249,6 @@ void TeaManager::update()
 
 void TeaManager::startMakingTea(const TeaRecipe &recipe)
 {
-    if (currentState == TeaState::MAKING)
-    {
-        if (bleMgr)
-        {
-            bleMgr->sendError("MAKE_TEA_ERROR", "Tea is already being made");
-        }
-        return;
-    }
-
     // --- Pre-dispense cup check ---
     if (sensorMgr)
     {
@@ -320,9 +305,6 @@ void TeaManager::startMakingTea(const TeaRecipe &recipe)
 // dismiss cup warning after cup is removed during dispensing
 void TeaManager::dismissCupWarning()
 {
-    if (currentState != TeaState::CUP_WARNING)
-        return;
-
     currentState = TeaState::IDLE;
     currentProgress = 0;
     DEBUG_PRINTLN(F("[TeaManager] Cup warning dismissed"));
@@ -384,9 +366,6 @@ void TeaManager::previewRecipe(int btnIndex, const ButtonInfo &info)
 
 void TeaManager::confirmBrew()
 {
-    if (currentState != TeaState::PREVIEW)
-        return;
-
     DEBUG_PRINTF("[TeaManager] Confirmed: %s\n", previewInfo.name.c_str());
     previewButtonIndex = -1;
     startMakingTea(previewInfo.recipe);
@@ -394,9 +373,6 @@ void TeaManager::confirmBrew()
 
 void TeaManager::cancelPreview()
 {
-    if (currentState != TeaState::PREVIEW && currentState != TeaState::WAITING_FOR_CUP)
-        return;
-
     currentState = TeaState::IDLE;
     previewButtonIndex = -1;
     DEBUG_PRINTLN(F("[TeaManager] Preview cancelled"));
@@ -406,18 +382,12 @@ void TeaManager::cancelPreview()
 
 void TeaManager::startCleaningMode()
 {
-    if (currentState != TeaState::IDLE)
-        return;
-
     currentState = TeaState::CLEANING;
     cleaningMode.start();
 }
 
 void TeaManager::cancelCleaningMode()
 {
-    if (currentState != TeaState::CLEANING)
-        return;
-
     cleaningMode.cancel();
     currentState = TeaState::IDLE;
 }
@@ -426,26 +396,17 @@ void TeaManager::cancelCleaningMode()
 
 void TeaManager::startCalibrationMode()
 {
-    if (currentState != TeaState::IDLE)
-        return;
-
     currentState = TeaState::CALIBRATION;
 }
 
 void TeaManager::exitCalibrationMode()
 {
-    if (currentState != TeaState::CALIBRATION)
-        return;
-
     calibratingCup = false;
     currentState = TeaState::IDLE;
 }
 
 void TeaManager::resetCalibrationWeight()
 {
-    if (currentState != TeaState::CALIBRATION)
-        return;
-
     if (sensorMgr)
     {
         sensorMgr->zeroTare();
@@ -455,9 +416,6 @@ void TeaManager::resetCalibrationWeight()
 
 void TeaManager::toggleDispensingMode()
 {
-    if (currentState != TeaState::CALIBRATION)
-        return;
-
     weightDispensingMode = !weightDispensingMode;
     saveDispensingMode(weightDispensingMode);
     sendDeviceInfoJSON();
@@ -469,12 +427,9 @@ void TeaManager::toggleDispensingMode()
 // will be called via ble
 void TeaManager::setDispensingMode(bool isWeight)
 {
-    // Block during active dispensing or cleaning
-    if (currentState == TeaState::MAKING || currentState == TeaState::CLEANING)
-        return;
-
     weightDispensingMode = isWeight;
     saveDispensingMode(weightDispensingMode);
+    sendDeviceInfoJSON();
 
     DEBUG_PRINTF("[TeaManager] Set dispensing mode: %s\n",
                  isWeight ? "WEIGHT" : "TIME");
@@ -484,17 +439,11 @@ void TeaManager::setDispensingMode(bool isWeight)
 
 void TeaManager::startCupWeightCalibration()
 {
-    if (currentState != TeaState::CALIBRATION)
-        return;
-
     calibratingCup = true;
 }
 
 void TeaManager::finishCupWeightCalibration()
 {
-    if (currentState != TeaState::CALIBRATION || !calibratingCup)
-        return;
-
     if (sensorMgr)
     {
         float currentWeight = sensorMgr->getWeight() - 1.0f;
@@ -529,24 +478,19 @@ void TeaManager::setTargetTotalMl(int ml)
         ml = MAX_ML;
     targetTotalMl = ml;
     saveTargetTotalMl(ml);
+    sendDeviceInfoJSON();
 }
 
 // ===== Target Total ML Adjustment Mode =====
 
 void TeaManager::startTargetMlMode()
 {
-    if (currentState != TeaState::IDLE)
-        return;
-
     currentState = TeaState::TARGET_ML;
     DEBUG_PRINTF("[TeaManager] Entered TARGET_ML mode. Current value: %dml\n", targetTotalMl);
 }
 
 void TeaManager::exitTargetMlMode()
 {
-    if (currentState != TeaState::TARGET_ML)
-        return;
-
     saveTargetTotalMl(targetTotalMl);
     sendDeviceInfoJSON();
 
@@ -556,9 +500,6 @@ void TeaManager::exitTargetMlMode()
 
 void TeaManager::incrementTargetMl()
 {
-    if (currentState != TeaState::TARGET_ML)
-        return;
-
     constexpr int MAX_ML = 1000;
     targetTotalMl = min(targetTotalMl + 10, MAX_ML);
     DEBUG_PRINTF("[TeaManager] Target ML incremented to %dml\n", targetTotalMl);
@@ -566,9 +507,6 @@ void TeaManager::incrementTargetMl()
 
 void TeaManager::decrementTargetMl()
 {
-    if (currentState != TeaState::TARGET_ML)
-        return;
-
     constexpr int MIN_ML = 100;
     targetTotalMl = max(targetTotalMl - 10, MIN_ML);
     DEBUG_PRINTF("[TeaManager] Target ML decremented to %dml\n", targetTotalMl);

@@ -2,7 +2,10 @@
 #define DISPLAY_MANAGER_H
 
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "Config.h"
 #include "Models.h"
 
 class DisplayManager

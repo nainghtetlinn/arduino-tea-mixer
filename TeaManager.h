@@ -1,7 +1,9 @@
 #ifndef TEA_MANAGER_H
 #define TEA_MANAGER_H
 
+#include <Arduino.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 #include "Config.h"
 #include "Models.h"
 #include "BluetoothManager.h"

@@ -2,10 +2,10 @@
 #include "ButtonManager.h"
 #include "Config.h"
 #include "DisplayManager.h"
-#include "SensorManager.h"
-#include "RelayManager.h"
-#include "TeaManager.h"
 #include "Models.h"
+#include "RelayManager.h"
+#include "SensorManager.h"
+#include "TeaManager.h"
 
 // Instantiate managers as global objects
 DisplayManager displayManager;
@@ -28,11 +28,20 @@ void setup()
 
             JsonObjectConst payload = doc["payload"].as<JsonObjectConst>();
 
+            TeaState state = teaManager.getState();
+
             if (type == BleCommand::MAKE_TEA)
             {
-                TeaRecipe recipe;
-                recipe.fromJson(payload);
-                teaManager.startMakingTea(recipe);
+                if (state == TeaState::IDLE)
+                {
+                    TeaRecipe recipe;
+                    recipe.fromJson(payload);
+                    teaManager.startMakingTea(recipe);
+                }
+                else
+                {
+                    bluetoothManager.sendError("MAKE_TEA_ERROR", "Tea state is not in idle state");
+                }
             }
             else if (type == BleCommand::GET_BUTTONS_INFO)
             {
@@ -70,11 +79,25 @@ void setup()
             }
             else if (type == BleCommand::START_CLEANING)
             {
-                teaManager.startCleaningMode();
+                if (state == TeaState::IDLE)
+                {
+                    teaManager.startCleaningMode();
+                }
+                else
+                {
+                    bluetoothManager.sendError("START_CLEANING_ERROR", "Tea state is not in idle state");
+                }
             }
             else if (type == BleCommand::CANCEL_CLEANING)
             {
-                teaManager.cancelCleaningMode();
+                if (state == TeaState::CLEANING)
+                {
+                    teaManager.cancelCleaningMode();
+                }
+                else
+                {
+                    bluetoothManager.sendError("CANCEL_CLEANING_ERROR", "Tea state is not in cleaning state");
+                }
             }
 
             else

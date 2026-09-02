@@ -1,10 +1,12 @@
 #ifndef SENSOR_MANAGER_H
 #define SENSOR_MANAGER_H
 
-#include <Arduino.h>
 #include <HX711.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Preferences.h>
+#include <cmath>
+#include "Config.h"
 
 class SensorManager
 {

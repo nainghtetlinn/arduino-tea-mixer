@@ -1,8 +1,4 @@
 #include "CleaningMode.h"
-#include "Config.h"
-#include "RelayManager.h"
-#include "DisplayManager.h"
-#include "BluetoothManager.h"
 
 namespace
 {

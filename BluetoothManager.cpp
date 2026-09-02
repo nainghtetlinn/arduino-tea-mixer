@@ -1,5 +1,4 @@
 #include "BluetoothManager.h"
-#include "Config.h"
 
 namespace
 {

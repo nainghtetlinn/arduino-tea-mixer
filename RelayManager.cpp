@@ -1,5 +1,4 @@
 #include "RelayManager.h"
-#include "Config.h"
 
 namespace
 {

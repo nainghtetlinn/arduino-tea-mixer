@@ -1,7 +1,4 @@
 #include "SensorManager.h"
-#include "Config.h"
-#include <Preferences.h>
-#include <cmath>
 
 namespace
 {

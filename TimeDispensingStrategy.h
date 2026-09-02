@@ -1,8 +1,11 @@
 #ifndef TIME_DISPENSING_STRATEGY_H
 #define TIME_DISPENSING_STRATEGY_H
 
+#include <Arduino.h>
 #include "DispensingStrategy.h"
 #include "Config.h"
+#include "RelayManager.h"
+#include "SensorManager.h"
 
 // =========================================================================
 // Sequential-pair time-based dispensing strategy
@@ -41,8 +44,8 @@ private:
 
     // 500 ms deferred activation — up to 2 relays can be batched together
     // (e.g. when two equal-duration relays finish in the same tick)
-    uint8_t pendingCount;            // 0, 1, or 2
-    uint8_t pendingRelayIdx[2];      // relays waiting to start
+    uint8_t pendingCount;              // 0, 1, or 2
+    uint8_t pendingRelayIdx[2];        // relays waiting to start
     unsigned long pendingActivateTime; // shared fire timestamp for the batch
 
     float getFlowRateForIndex(uint8_t index) const;
