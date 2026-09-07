@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Component Diagram — Project Tea</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px; min-height: 100vh; }
+  h1 { font-size: 22px; font-weight: 700; color: #e8e8f0; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+  .canvas { background: #16213e; border-radius: 16px; box-shadow: 0 8px 48px rgba(0,0,0,0.5); padding: 30px; width: 1200px; height: 820px; position: relative; border: 1px solid #0f3460; }
+
+  /* Layer swimlanes */
+  .lane { position: absolute; border-radius: 12px; border: 2px dashed; }
+  .lane-label { position: absolute; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.7; }
+
+  /* Component blocks */
+  .comp { position: absolute; border-radius: 10px; padding: 12px 14px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: all 0.2s; cursor: default; }
+  .comp:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.4); }
+
+  .comp-name { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .comp-icon { font-size: 16px; }
+  .comp-tag  { font-size: 9.5px; font-weight: 600; letter-spacing: 0.5px; opacity: 0.7; text-transform: uppercase; border: 1px solid; border-radius: 4px; padding: 1px 5px; display: inline-block; width: fit-content; margin-top: 2px; }
+  .comp-iface { font-size: 10.5px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); }
+  .comp-iface div { padding: 1px 0; opacity: 0.85; }
+
+  /* Component colour themes */
+  .c-core   { background: linear-gradient(135deg, #e74c3c22, #e74c3c11); border: 2px solid #e74c3c; color: #f8c6c0; }
+  .c-hw     { background: linear-gradient(135deg, #9b59b622, #9b59b611); border: 2px solid #9b59b6; color: #d7b8f3; }
+  .c-comm   { background: linear-gradient(135deg, #2980b922, #2980b911); border: 2px solid #2980b9; color: #a8d4f5; }
+  .c-ui     { background: linear-gradient(135deg, #27ae6022, #27ae6011); border: 2px solid #27ae60; color: #a8e6bf; }
+  .c-ext    { background: linear-gradient(135deg, #f39c1222, #f39c1211); border: 2px solid #f39c12; color: #fce4a6; }
+  .c-model  { background: linear-gradient(135deg, #7f8c8d22, #7f8c8d11); border: 2px solid #7f8c8d; color: #d4dbdd; }
+
+  svg.arrows { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
+
+  /* Interface circles (lollipop) */
+  .iface-circle { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: white; border: 2px solid; }
+
+  /* Port squares */
+  .port { position: absolute; width: 8px; height: 8px; border-radius: 2px; }
+
+  .legend-dark { display: flex; gap: 20px; margin-top: 18px; font-size: 12px; color: #aaa; }
+  .legend-item-dark { display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+<h1>🔩 Component Diagram — Project Tea (ESP32)</h1>
+<p class="subtitle">Software + hardware component architecture with interfaces and dependencies</p>
+
+<div class="canvas">
+  <svg class="arrows">
+    <defs>
+      <marker id="aWh" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="rgba(255,255,255,0.6)"/>
+      </marker>
+      <marker id="aRed" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#e74c3c"/>
+      </marker>
+      <marker id="aBlue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#2980b9"/>
+      </marker>
+      <marker id="aGreen" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#27ae60"/>
+      </marker>
+      <marker id="aYellow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#f39c12"/>
+      </marker>
+      <style>
+        .t { stroke-width: 1.8; fill: none; }
+        .t-w  { stroke: rgba(255,255,255,0.45); }
+        .t-r  { stroke: #e74c3c; }
+        .t-b  { stroke: #2980b9; }
+        .t-g  { stroke: #27ae60; }
+        .t-y  { stroke: #f39c12; }
+        .t-p  { stroke: #9b59b6; }
+        .lbl  { font-family:'Inter',sans-serif; font-size: 10px; fill: rgba(255,255,255,0.6); }
+      </style>
+    </defs>
+
+    <!-- project_tea.ino → TeaManager -->
+    <path d="M 590 148 L 590 195" class="t t-r" marker-end="url(#aRed)"/>
+    <text x="595" y="175" class="lbl">orchestrates</text>
+
+    <!-- project_tea.ino → ButtonManager -->
+    <path d="M 530 140 C 420 140, 310 165, 220 195" class="t t-w" marker-end="url(#aWh)"/>
+
+    <!-- project_tea.ino → BluetoothManager -->
+    <path d="M 650 140 C 770 140, 860 160, 940 195" class="t t-b" marker-end="url(#aBlue)"/>
+
+    <!-- project_tea.ino → DisplayManager -->
+    <path d="M 570 148 C 480 160, 440 185, 360 195" class="t t-g" marker-end="url(#aGreen)"/>
+
+    <!-- project_tea.ino → RelayManager -->
+    <path d="M 600 148 C 630 165, 720 185, 780 195" class="t t-p" marker-end="url(#aWh)"/>
+
+    <!-- project_tea.ino → SensorManager -->
+    <path d="M 615 148 C 740 160, 860 185, 940 300" class="t t-y" stroke-dasharray="5,3" marker-end="url(#aYellow)"/>
+
+    <!-- TeaManager → WeightDispensingStrategy -->
+    <path d="M 530 295 L 390 375" class="t t-r" marker-end="url(#aRed)"/>
+    <text x="422" y="325" class="lbl">delegates to</text>
+
+    <!-- TeaManager → TimeDispensingStrategy -->
+    <path d="M 535 320 L 390 470" class="t t-r" stroke-dasharray="4,2" marker-end="url(#aRed)"/>
+
+    <!-- TeaManager → CleaningMode -->
+    <path d="M 540 335 L 340 510" class="t t-r" stroke-dasharray="4,2" marker-end="url(#aRed)"/>
+
+    <!-- WeightDispensingStrategy → SensorManager -->
+    <path d="M 300 435 C 500 450, 800 430, 940 390" class="t t-y" stroke-dasharray="5,3" marker-end="url(#aYellow)"/>
+    <text x="570" y="446" class="lbl">reads weight</text>
+
+    <!-- WeightDispensingStrategy → RelayManager -->
+    <path d="M 300 415 C 480 415, 690 330, 780 310" class="t t-p" stroke-dasharray="5,3" marker-end="url(#aWh)"/>
+    <text x="430" y="380" class="lbl">controls</text>
+
+    <!-- TimeDispensingStrategy → RelayManager -->
+    <path d="M 300 510 C 500 510, 700 350, 780 320" class="t t-p" stroke-dasharray="5,3" marker-end="url(#aWh)"/>
+
+    <!-- TimeDispensingStrategy → SensorManager (for flow rates) -->
+    <path d="M 300 540 C 600 560, 880 500, 940 420" class="t t-y" stroke-dasharray="3,4" marker-end="url(#aYellow)"/>
+
+    <!-- CleaningMode → RelayManager -->
+    <path d="M 310 570 C 500 570, 700 370, 780 330" class="t t-p" stroke-dasharray="5,3" marker-end="url(#aWh)"/>
+
+    <!-- CleaningMode → BluetoothManager (notify) -->
+    <path d="M 310 545 C 500 545, 820 480, 940 340" class="t t-b" stroke-dasharray="5,3" marker-end="url(#aBlue)"/>
+    <text x="570" y="515" class="lbl">notify</text>
+
+    <!-- RelayManager → HW Relays -->
+    <path d="M 850 305 L 850 440" class="t t-p" marker-end="url(#aWh)"/>
+    <text x="857" y="380" class="lbl">GPIO</text>
+
+    <!-- SensorManager → HW Sensors -->
+    <path d="M 1020 430 L 1020 480" class="t t-y" marker-end="url(#aYellow)"/>
+    <text x="1026" y="460" class="lbl">I2C/1-Wire</text>
+
+    <!-- DisplayManager → HW Display -->
+    <path d="M 310 300 L 310 440" class="t t-g" marker-end="url(#aGreen)"/>
+    <text x="317" y="380" class="lbl">I2C (SSD1306)</text>
+
+    <!-- ButtonManager → HW Buttons -->
+    <path d="M 150 290 L 150 440" class="t t-w" marker-end="url(#aWh)"/>
+    <text x="155" y="380" class="lbl">GPIO</text>
+
+    <!-- BluetoothManager → BLE Stack -->
+    <path d="M 1020 290 L 1020 360" class="t t-b" marker-end="url(#aBlue)"/>
+    <text x="1026" y="325" class="lbl">ESP32 BLE</text>
+
+  </svg>
+
+  <!-- ══ LAYER: Entry Point ══ -->
+  <div style="position:absolute; left:16px; top:12px; color: rgba(255,255,255,0.3); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">▶ Entry Point</div>
+  <div class="comp c-core" style="left:510px; top:56px; width:200px;">
+    <div class="comp-name"><span class="comp-icon">🎛️</span>project_tea.ino</div>
+    <div class="comp-tag" style="border-color:#e74c3c; color:#e74c3c;"><<sketch>></div>
+    <div class="comp-iface">
+      <div>📌 setup(): init all managers</div>
+      <div>📌 loop(): update() tick</div>
+      <div>📌 Wires all BLE callbacks</div>
+      <div>📌 Wires all button callbacks</div>
+    </div>
+  </div>
+
+  <!-- ══ LAYER: Application ══ -->
+  <div style="position:absolute; left:16px; top:150px; color: rgba(255,255,255,0.3); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">▶ Application Layer</div>
+
+  <div class="comp c-core" style="left:510px; top:195px; width:220px;">
+    <div class="comp-name"><span class="comp-icon">☕</span>TeaManager</div>
+    <div class="comp-tag" style="border-color:#e74c3c; color:#e74c3c;"><<manager>></div>
+    <div class="comp-iface">
+      <div>▸ State machine owner</div>
+      <div>▸ startMakingTea(recipe)</div>
+      <div>▸ previewRecipe / confirmBrew</div>
+      <div>▸ Delegates to Strategy</div>
+      <div>▸ NVS persistence (Preferences)</div>
+    </div>
+  </div>
+
+  <!-- Strategies -->
+  <div class="comp c-core" style="left:80px; top:375px; width:220px;">
+    <div class="comp-name"><span class="comp-icon">⚖️</span>WeightDispensingStrategy</div>
+    <div class="comp-tag" style="border-color:#e74c3c; color:#e74c3c;"><<strategy>></div>
+    <div class="comp-iface">
+      <div>▸ Sequential phase dispensing</div>
+      <div>▸ HX711 weight feedback</div>
+      <div>▸ TEA→CM→EM→MILK phases</div>
+    </div>
+  </div>
+
+  <div class="comp c-core" style="left:80px; top:470px; width:220px;">
+    <div class="comp-name"><span class="comp-icon">⏱️</span>TimeDispensingStrategy</div>
+    <div class="comp-tag" style="border-color:#e74c3c; color:#e74c3c;"><<strategy>></div>
+    <div class="comp-iface">
+      <div>▸ Parallel time-based relays</div>
+      <div>▸ Sorted relay scheduling</div>
+      <div>▸ ≤2 relays simultaneously</div>
+    </div>
+  </div>
+
+  <div class="comp c-core" style="left:80px; top:510px; width:220px; top:555px;">
+    <div class="comp-name"><span class="comp-icon">🧹</span>CleaningMode</div>
+    <div class="comp-tag" style="border-color:#e74c3c; color:#e74c3c;"><<mode>></div>
+    <div class="comp-iface">
+      <div>▸ 2-phase relay cleaning</div>
+      <div>▸ 500ms switch gap</div>
+      <div>▸ BLE progress notify</div>
+    </div>
+  </div>
+
+  <!-- ══ LAYER: Hardware Managers ══ -->
+  <div style="position:absolute; left:16px; top:150px; color: rgba(255,255,255,0.3); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; left: 720px;">▶ Hardware Managers</div>
+
+  <div class="comp c-hw" style="left:770px; top:195px; width:200px;">
+    <div class="comp-name"><span class="comp-icon">🔌</span>RelayManager</div>
+    <div class="comp-tag" style="border-color:#9b59b6; color:#9b59b6;"><<manager>></div>
+    <div class="comp-iface">
+      <div>▸ setRelay(idx, on)</div>
+      <div>▸ stopAll() emergency</div>
+      <div>▸ 4 relay GPIO pins</div>
+    </div>
+  </div>
+
+  <div class="comp c-ui" style="left:270px; top:195px; width:190px;">
+    <div class="comp-name"><span class="comp-icon">🖥️</span>DisplayManager</div>
+    <div class="comp-tag" style="border-color:#27ae60; color:#27ae60;"><<manager>></div>
+    <div class="comp-iface">
+      <div>▸ OLED SSD1306 I2C</div>
+      <div>▸ 10 screen methods</div>
+      <div>▸ Adafruit GFX library</div>
+    </div>
+  </div>
+
+  <div class="comp c-ui" style="left:80px; top:195px; width:175px;">
+    <div class="comp-name"><span class="comp-icon">🔘</span>ButtonManager</div>
+    <div class="comp-tag" style="border-color:#27ae60; color:#27ae60;"><<manager>></div>
+    <div class="comp-iface">
+      <div>▸ 3× OneButton</div>
+      <div>▸ Combo hold detection</div>
+      <div>▸ NVS button configs</div>
+    </div>
+  </div>
+
+  <div class="comp c-comm" style="left:920px; top:195px; width:220px;">
+    <div class="comp-name"><span class="comp-icon">📡</span>BluetoothManager</div>
+    <div class="comp-tag" style="border-color:#2980b9; color:#2980b9;"><<manager>></div>
+    <div class="comp-iface">
+      <div>▸ BLE GATT Server</div>
+      <div>▸ JSON RPC over BLE</div>
+      <div>▸ notify + read/write char</div>
+    </div>
+  </div>
+
+  <div class="comp c-ext" style="left:920px; top:300px; width:210px;">
+    <div class="comp-name"><span class="comp-icon">🌡️</span>SensorManager</div>
+    <div class="comp-tag" style="border-color:#f39c12; color:#f39c12;"><<manager>></div>
+    <div class="comp-iface">
+      <div>▸ HX711 load cell (weight)</div>
+      <div>▸ DS18B20 (temperature)</div>
+      <div>▸ NVS calibration factor</div>
+    </div>
+  </div>
+
+  <!-- ══ LAYER: Hardware ══ -->
+  <div style="position:absolute; left:16px; top:420px; color: rgba(255,255,255,0.2); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">▶ Hardware Layer</div>
+
+  <div style="position:absolute; left:80px; top:440px; width:130px; border-radius:8px; background:#ffffff0a; border:1px solid rgba(255,255,255,0.15); padding:10px 12px; font-size:11px; color:#aaa; text-align:center;">
+    <div style="font-size:20px; margin-bottom:4px;">🔘</div>
+    <div style="font-weight:600; color:#ccc;">3× Push Buttons</div>
+    <div style="font-size:10px; margin-top:4px;">GPIO (pull-up)</div>
+  </div>
+
+  <div style="position:absolute; left:240px; top:440px; width:140px; border-radius:8px; background:#ffffff0a; border:1px solid rgba(255,255,255,0.15); padding:10px 12px; font-size:11px; color:#aaa; text-align:center;">
+    <div style="font-size:20px; margin-bottom:4px;">📺</div>
+    <div style="font-weight:600; color:#ccc;">OLED 128×64</div>
+    <div style="font-size:10px; margin-top:4px;">I2C SSD1306</div>
+  </div>
+
+  <div style="position:absolute; left:800px; top:440px; width:130px; border-radius:8px; background:#ffffff0a; border:1px solid rgba(255,255,255,0.15); padding:10px 12px; font-size:11px; color:#aaa; text-align:center;">
+    <div style="font-size:20px; margin-bottom:4px;">⚡</div>
+    <div style="font-weight:600; color:#ccc;">4× Relays</div>
+    <div style="font-size:10px; margin-top:4px;">Tea / CM / EM / Milk</div>
+  </div>
+
+  <div style="position:absolute; left:950px; top:480px; width:170px; border-radius:8px; background:#ffffff0a; border:1px solid rgba(255,255,255,0.15); padding:10px 12px; font-size:11px; color:#aaa; text-align:center;">
+    <div style="font-size:20px; margin-bottom:4px;">⚖️</div>
+    <div style="font-weight:600; color:#ccc;">HX711 + Load Cell</div>
+    <div style="font-size:10px; margin-top:4px;">Weight sensor</div>
+  </div>
+
+  <div style="position:absolute; left:950px; top:570px; width:170px; border-radius:8px; background:#ffffff0a; border:1px solid rgba(255,255,255,0.15); padding:10px 12px; font-size:11px; color:#aaa; text-align:center;">
+    <div style="font-size:20px; margin-bottom:4px;">🌡️</div>
+    <div style="font-weight:600; color:#ccc;">DS18B20</div>
+    <div style="font-size:10px; margin-top:4px;">1-Wire temperature</div>
+  </div>
+
+  <div style="position:absolute; left:920px; top:640px; width:220px; border-radius:8px; background:#0a2540; border:2px solid #2980b9; padding:10px 12px; font-size:11px; color:#a8d4f5; text-align:center;">
+    <div style="font-size:20px; margin-bottom:4px;">📱</div>
+    <div style="font-weight:600; color:#7ecdf5;">BLE Mobile App</div>
+    <div style="font-size:10px; margin-top:4px; color:#888;">JSON commands over BLE GATT</div>
+    <div style="font-size:10px; margin-top:2px; color:#888;">MAKE_TEA | SET_BUTTON | GET_INFO</div>
+  </div>
+
+  <!-- Models box -->
+  <div class="comp c-model" style="left:390px; top:680px; width:380px;">
+    <div class="comp-name"><span class="comp-icon">📦</span>Models.h &amp; Config.h — Shared Types</div>
+    <div class="comp-tag" style="border-color:#7f8c8d; color:#aaa;"><<shared>></div>
+    <div class="comp-iface" style="display:flex; gap:24px;">
+      <div>
+        <div>TeaRecipe struct</div>
+        <div>ButtonInfo struct</div>
+        <div>TeaState enum</div>
+        <div>DispensingPhase enum</div>
+      </div>
+      <div>
+        <div>BleCommand namespace</div>
+        <div>BleResponse namespace</div>
+        <div>DEBUG macros</div>
+        <div>RELAY_COUNT / BUTTON_COUNT</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend-dark">
+  <span style="color:#e74c3c; font-weight:600;">■</span> Application/Business Logic
+  <span style="color:#9b59b6; font-weight:600;">■</span> Hardware Managers
+  <span style="color:#27ae60; font-weight:600;">■</span> UI / Input
+  <span style="color:#2980b9; font-weight:600;">■</span> Communication
+  <span style="color:#f39c12; font-weight:600;">■</span> Sensing
+</div>
+</body>
+</html>

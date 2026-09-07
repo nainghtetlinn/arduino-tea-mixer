@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Class Diagram — Project Tea</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(52, 152, 219, 0.10), transparent 28%),
+      radial-gradient(circle at top right, rgba(243, 156, 18, 0.10), transparent 24%),
+      linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .subtitle { font-size: 13px; color: #5f6b7a; margin-bottom: 20px; max-width: 1100px; text-align: center; }
+
+  .canvas {
+    background:
+      linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)),
+      repeating-linear-gradient(0deg, rgba(26,26,46,0.03) 0, rgba(26,26,46,0.03) 1px, transparent 1px, transparent 40px),
+      repeating-linear-gradient(90deg, rgba(26,26,46,0.03) 0, rgba(26,26,46,0.03) 1px, transparent 1px, transparent 40px);
+    border: 1px solid rgba(26, 26, 46, 0.08);
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+    padding: 32px;
+    width: min(1500px, calc(100vw - 48px));
+    min-width: 1320px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .uml-box {
+    position: absolute;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+    font-size: 11px;
+    min-width: 170px;
+    backdrop-filter: blur(2px);
+  }
+  .uml-header {
+    padding: 8px 12px;
+    border-radius: 12px 12px 0 0;
+    font-weight: 700;
+    font-size: 12px;
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+  .uml-stereotype { font-size: 10px; font-weight: 500; opacity: 0.8; display: block; }
+  .uml-section {
+    border-top: 1px solid rgba(0,0,0,0.10);
+    padding: 7px 10px;
+    line-height: 1.45;
+  }
+  .uml-section div {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    margin: 2px 0;
+  }
+  .vis-private { color: #c0392b; font-weight: 500; }
+  .vis-protected { color: #8e44ad; font-weight: 500; }
+  .vis-public { color: #27ae60; font-weight: 500; }
+  .abstract-method { font-style: italic; }
+
+  /* Color themes */
+  .theme-strategy    { background: #fff; border: 2px solid #3498db; }
+  .theme-strategy    .uml-header { background: #3498db; color: white; }
+
+  .theme-concrete    { background: #fff; border: 2px solid #2ecc71; }
+  .theme-concrete    .uml-header { background: #2ecc71; color: white; }
+
+  .theme-manager     { background: #fff; border: 2px solid #e74c3c; }
+  .theme-manager     .uml-header { background: #e74c3c; color: white; }
+
+  .theme-hardware    { background: #fff; border: 2px solid #9b59b6; }
+  .theme-hardware    .uml-header { background: #9b59b6; color: white; }
+
+  .theme-model       { background: #fff; border: 2px solid #f39c12; }
+  .theme-model       .uml-header { background: #f39c12; color: white; }
+
+  .theme-main        { background: #fff; border: 2px solid #1a1a2e; }
+  .theme-main        .uml-header { background: #1a1a2e; color: white; }
+
+  svg.arrows { position: absolute; inset: 0; pointer-events: none; }
+  .arrow-inherit { stroke: #3498db; stroke-width: 2; fill: none; marker-end: url(#tri); }
+  .arrow-compose  { stroke: #555; stroke-width: 1.5; fill: none; stroke-dasharray: 5,3; marker-end: url(#arrow); }
+  .arrow-assoc    { stroke: #999; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 22px;
+    margin-top: 18px;
+    font-size: 12px;
+    color: #555;
+    justify-content: center;
+    max-width: 1500px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-line { width: 28px; height: 2px; }
+  .legend-line.solid { background: #3498db; }
+  .legend-line.dashed { background: #999; background: repeating-linear-gradient(90deg,#999 0,#999 4px,transparent 4px,transparent 8px); height: 2px; }
+</style>
+</head>
+<body>
+<h1>📐 Class Diagram — Project Tea (ESP32 Tea Dispenser)</h1>
+<p class="subtitle">Structural diagram showing all classes, attributes, methods, and relationships</p>
+
+<div class="canvas" style="height: 1250px;">
+
+  <svg class="arrows" width="1436" height="1250">
+    <defs>
+      <marker id="tri" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+        <polygon points="0 0, 10 4, 0 8" fill="white" stroke="#3498db" stroke-width="1.5"/>
+      </marker>
+      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#888"/>
+      </marker>
+      <marker id="diamond" markerWidth="10" markerHeight="8" refX="0" refY="4" orient="auto">
+        <polygon points="0 4, 5 0, 10 4, 5 8" fill="white" stroke="#555" stroke-width="1"/>
+      </marker>
+    </defs>
+
+    <!-- WeightDispensingStrategy -> DispensingStrategy (inheritance) -->
+    <line x1="150" y1="420" x2="150" y2="220" class="arrow-inherit"/>
+
+    <!-- TimeDispensingStrategy -> DispensingStrategy (inheritance) -->
+    <line x1="405" y1="420" x2="255" y2="220" class="arrow-inherit"/>
+
+    <!-- TeaManager -> RelayManager -->
+    <line x1="820" y1="225" x2="980" y2="135" class="arrow-compose"/>
+    <!-- TeaManager -> SensorManager -->
+    <line x1="820" y1="245" x2="980" y2="290" class="arrow-compose"/>
+    <!-- TeaManager -> DisplayManager -->
+    <line x1="820" y1="265" x2="980" y2="500" class="arrow-compose"/>
+    <!-- TeaManager -> ButtonManager -->
+    <line x1="820" y1="285" x2="980" y2="785" class="arrow-compose"/>
+    <!-- TeaManager -> BluetoothManager -->
+    <line x1="820" y1="305" x2="980" y2="1055" class="arrow-compose"/>
+    <!-- TeaManager -> CleaningMode -->
+    <line x1="720" y1="595" x2="720" y2="760" class="arrow-compose"/>
+    <!-- TeaManager -> DispensingStrategy (uses) -->
+    <line x1="560" y1="220" x2="285" y2="150" class="arrow-compose"/>
+
+    <!-- ButtonInfo -> TeaRecipe -->
+    <line x1="360" y1="1010" x2="170" y2="1010" class="arrow-assoc"/>
+  </svg>
+
+  <!-- ======== DispensingStrategy (Abstract) ======== -->
+  <div class="uml-box theme-strategy" style="left:40px; top:60px; width:240px;">
+    <div class="uml-header">
+      <span class="uml-stereotype">&laquo;abstract&raquo;</span>
+      DispensingStrategy
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-protected">#</span> sensorMgr: SensorManager*</div>
+      <div><span class="vis-protected">#</span> relayMgr: RelayManager*</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> begin(SensorManager *sensor, RelayManager *relay): void</div>
+      <div class="abstract-method"><span class="vis-public">+</span> start(const TeaRecipe &target): void</div>
+      <div class="abstract-method"><span class="vis-public">+</span> update(TeaRecipe &dispensed): bool</div>
+      <div class="abstract-method"><span class="vis-public">+</span> stop(): void</div>
+    </div>
+  </div>
+
+  <!-- ======== WeightDispensingStrategy ======== -->
+  <div class="uml-box theme-concrete" style="left:20px; top:320px; width:250px;">
+    <div class="uml-header">WeightDispensingStrategy</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> target: TeaRecipe</div>
+      <div><span class="vis-private">-</span> currentPhase: DispensingPhase</div>
+      <div><span class="vis-private">-</span> weightAtPhaseStart: float</div>
+      <div><span class="vis-private">-</span> phaseStartTime: ulong</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> start(const TeaRecipe &target): void</div>
+      <div><span class="vis-public">+</span> update(TeaRecipe &dispensed): bool</div>
+      <div><span class="vis-public">+</span> stop(): void</div>
+      <div><span class="vis-private">-</span> startPhase(DispensingPhase phase): void</div>
+      <div><span class="vis-private">-</span> advancePhase(): void</div>
+      <div><span class="vis-private">-</span> getTargetMlForPhase(DispensingPhase phase): int</div>
+      <div><span class="vis-private">-</span> getGramsPerMlForPhase(DispensingPhase phase): float</div>
+      <div><span class="vis-private">-</span> getRelayIndexForPhase(DispensingPhase phase): uint8_t</div>
+    </div>
+  </div>
+
+  <!-- ======== TimeDispensingStrategy ======== -->
+  <div class="uml-box theme-concrete" style="left:290px; top:320px; width:280px;">
+    <div class="uml-header">TimeDispensingStrategy</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> target: TeaRecipe</div>
+      <div><span class="vis-private">-</span> relayStartTime[]: ulong</div>
+      <div><span class="vis-private">-</span> relayDuration[]: ulong</div>
+      <div><span class="vis-private">-</span> relayRunning[]: bool</div>
+      <div><span class="vis-private">-</span> sortedOrder[]: uint8_t</div>
+      <div><span class="vis-private">-</span> nextToStart: uint8_t</div>
+      <div><span class="vis-private">-</span> pendingCount: uint8_t</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> start(const TeaRecipe &target): void</div>
+      <div><span class="vis-public">+</span> update(TeaRecipe &dispensed): bool</div>
+      <div><span class="vis-public">+</span> stop(): void</div>
+      <div><span class="vis-private">-</span> getFlowRateForIndex(uint8_t index): float</div>
+      <div><span class="vis-private">-</span> activateRelay(uint8_t index, unsigned long now): void</div>
+    </div>
+  </div>
+
+  <!-- ======== TeaManager ======== -->
+  <div class="uml-box theme-manager" style="left:560px; top:60px; width:340px;">
+    <div class="uml-header">TeaManager</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> relayMgr: RelayManager*</div>
+      <div><span class="vis-private">-</span> sensorMgr: SensorManager*</div>
+      <div><span class="vis-private">-</span> displayMgr: DisplayManager*</div>
+      <div><span class="vis-private">-</span> buttonMgr: ButtonManager*</div>
+      <div><span class="vis-private">-</span> bleMgr: BluetoothManager*</div>
+      <div><span class="vis-private">-</span> currentState: TeaState</div>
+      <div><span class="vis-private">-</span> weightDispensingMode: bool</div>
+      <div><span class="vis-private">-</span> activeStrategy: DispensingStrategy*</div>
+      <div><span class="vis-private">-</span> weightStrategy: WeightDispensingStrategy</div>
+      <div><span class="vis-private">-</span> timeStrategy: TimeDispensingStrategy</div>
+      <div><span class="vis-private">-</span> cleaningMode: CleaningMode</div>
+      <div><span class="vis-private">-</span> target, dispensed: TeaRecipe</div>
+      <div><span class="vis-private">-</span> minCupWeight: float</div>
+      <div><span class="vis-private">-</span> targetTotalMl: int</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> begin(RelayManager *relayMgr, SensorManager *sensorMgr, DisplayManager *displayMgr, ButtonManager *buttonMgr, BluetoothManager *bleMgr): void</div>
+      <div><span class="vis-public">+</span> update(): void</div>
+      <div><span class="vis-public">+</span> startMakingTea(const TeaRecipe &recipe): void</div>
+      <div><span class="vis-public">+</span> dismissCupWarning(): void</div>
+      <div><span class="vis-public">+</span> previewRecipe(int btnIndex, const ButtonInfo &info): void</div>
+      <div><span class="vis-public">+</span> confirmBrew(): void</div>
+      <div><span class="vis-public">+</span> cancelPreview(): void</div>
+      <div><span class="vis-public">+</span> startCleaningMode(): void</div>
+      <div><span class="vis-public">+</span> cancelCleaningMode(): void</div>
+      <div><span class="vis-public">+</span> startCalibrationMode(): void</div>
+      <div><span class="vis-public">+</span> exitCalibrationMode(): void</div>
+      <div><span class="vis-public">+</span> resetCalibrationWeight(): void</div>
+      <div><span class="vis-public">+</span> toggleDispensingMode(): void</div>
+      <div><span class="vis-public">+</span> setDispensingMode(bool weightMode): void</div>
+      <div><span class="vis-public">+</span> startCupWeightCalibration(): void</div>
+      <div><span class="vis-public">+</span> finishCupWeightCalibration(): void</div>
+      <div><span class="vis-public">+</span> cancelCupWeightCalibration(): void</div>
+      <div><span class="vis-public">+</span> setTargetTotalMl(int ml): void</div>
+      <div><span class="vis-public">+</span> startTargetMlMode(): void</div>
+      <div><span class="vis-public">+</span> exitTargetMlMode(): void</div>
+      <div><span class="vis-public">+</span> incrementTargetMl(): void</div>
+      <div><span class="vis-public">+</span> decrementTargetMl(): void</div>
+      <div><span class="vis-public">+</span> getPreviewButtonIndex() const: int</div>
+      <div><span class="vis-public">+</span> isWeightMode() const: bool</div>
+      <div><span class="vis-public">+</span> isCalibratingCupWeight() const: bool</div>
+      <div><span class="vis-public">+</span> getMinCupWeight() const: float</div>
+      <div><span class="vis-public">+</span> getTargetTotalMl() const: int</div>
+      <div><span class="vis-public">+</span> getState() const: TeaState</div>
+      <div><span class="vis-public">+</span> showBleConnected(): void</div>
+      <div><span class="vis-public">+</span> sendDeviceInfoJSON(): void</div>
+      <div><span class="vis-public">+</span> sendTemperatureJSON(): void</div>
+      <div><span class="vis-public">+</span> sendWeightJSON(): void</div>
+    </div>
+  </div>
+
+  <!-- ======== CleaningMode ======== -->
+  <div class="uml-box theme-hardware" style="left:560px; top:860px; width:230px;">
+    <div class="uml-header">CleaningMode</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> relayMgr: RelayManager*</div>
+      <div><span class="vis-private">-</span> displayMgr: DisplayManager*</div>
+      <div><span class="vis-private">-</span> bleMgr: BluetoothManager*</div>
+      <div><span class="vis-private">-</span> cleaningPhase: uint8_t</div>
+      <div><span class="vis-private">-</span> isSwitching: bool</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> begin(RelayManager *relay, DisplayManager *display, BluetoothManager *ble): void</div>
+      <div><span class="vis-public">+</span> start(): void</div>
+      <div><span class="vis-public">+</span> update(): bool</div>
+      <div><span class="vis-public">+</span> cancel(): void</div>
+    </div>
+  </div>
+
+  <!-- ======== RelayManager ======== -->
+  <div class="uml-box theme-hardware" style="left:980px; top:60px; width:220px;">
+    <div class="uml-header">RelayManager</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> relayActive[4]: bool</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> RelayManager()</div>
+      <div><span class="vis-public">+</span> begin(): void</div>
+      <div><span class="vis-public">+</span> setRelay(uint8_t index, bool on): void</div>
+      <div><span class="vis-public">+</span> stopAll(): void</div>
+      <div><span class="vis-public">+</span> isRelayActive(uint8_t index): bool</div>
+      <div><span class="vis-private">-</span> getRelayPin(uint8_t index): uint8_t</div>
+    </div>
+  </div>
+
+  <!-- ======== SensorManager ======== -->
+  <div class="uml-box theme-hardware" style="left:980px; top:250px; width:230px;">
+    <div class="uml-header">SensorManager</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> oneWire: OneWire</div>
+      <div><span class="vis-private">-</span> sensors: DallasTemperature</div>
+      <div><span class="vis-private">-</span> scale: HX711</div>
+      <div><span class="vis-private">-</span> currentTemperature: float</div>
+      <div><span class="vis-private">-</span> currentWeight: float</div>
+      <div><span class="vis-private">-</span> activeCalibrationFactor: float</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> SensorManager()</div>
+      <div><span class="vis-public">+</span> begin(): void</div>
+      <div><span class="vis-public">+</span> update(): void</div>
+      <div><span class="vis-public">+</span> getTemperature(): float</div>
+      <div><span class="vis-public">+</span> getWeight(): float</div>
+      <div><span class="vis-public">+</span> zeroTare(): void</div>
+      <div><span class="vis-public">+</span> finishCalibrationWeight(float knownWeightGrams): bool</div>
+      <div><span class="vis-public">+</span> getCalibrationFactor(): float</div>
+    </div>
+  </div>
+
+  <!-- ======== DisplayManager ======== -->
+  <div class="uml-box theme-hardware" style="left:980px; top:510px; width:250px;">
+    <div class="uml-header">DisplayManager</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> display: Adafruit_SSD1306</div>
+      <div><span class="vis-private">-</span> ready: bool</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> DisplayManager()</div>
+      <div><span class="vis-public">+</span> begin(): bool</div>
+      <div><span class="vis-public">+</span> showIdleScreen(const String &btn1, const String &btn2, const String &btn3, bool bleConnected, float temperature): void</div>
+      <div><span class="vis-public">+</span> showRecipePreviewScreen(const String &name, const TeaRecipe &recipe): void</div>
+      <div><span class="vis-public">+</span> showTeaProgressScreen(uint8_t progress): void</div>
+      <div><span class="vis-public">+</span> showTeaReadyScreen(): void</div>
+      <div><span class="vis-public">+</span> showCleaningProgressScreen(uint8_t remainingSeconds, uint8_t progress): void</div>
+      <div><span class="vis-public">+</span> showCleaningCompleteScreen(): void</div>
+      <div><span class="vis-public">+</span> showCalibrationScreen(float temperature, float weight, bool weightMode, float cupWeight, bool calibratingCup): void</div>
+      <div><span class="vis-public">+</span> showTargetMlScreen(int targetMl): void</div>
+      <div><span class="vis-public">+</span> showBleConnectedScreen(): void</div>
+      <div><span class="vis-public">+</span> showCupRemovedWarningScreen(): void</div>
+      <div><span class="vis-public">+</span> showPlaceCupScreen(): void</div>
+    </div>
+  </div>
+
+  <!-- ======== ButtonManager ======== -->
+  <div class="uml-box theme-hardware" style="left:980px; top:785px; width:240px;">
+    <div class="uml-header">ButtonManager</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> buttons[3]: OneButton</div>
+      <div><span class="vis-private">-</span> btnPressCb: callback</div>
+      <div><span class="vis-private">-</span> combo13Cb, combo12Cb: callback</div>
+      <div><span class="vis-private">-</span> combo23Cb: callback</div>
+      <div><span class="vis-private">-</span> suppressClick[3]: bool</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> ButtonManager()</div>
+      <div><span class="vis-public">+</span> begin(BluetoothManager *bleMgr): void</div>
+      <div><span class="vis-public">+</span> attachPressCallback(ButtonPressCallback pressCb): void</div>
+      <div><span class="vis-public">+</span> attachCleaningComboCallback(ButtonComboCallback comboCallback): void</div>
+      <div><span class="vis-public">+</span> attachCalibrationComboCallback(ButtonComboCallback comboCallback): void</div>
+      <div><span class="vis-public">+</span> attachTargetMlComboCallback(ButtonComboCallback comboCallback): void</div>
+      <div><span class="vis-public">+</span> update(): void</div>
+      <div><span class="vis-public">+</span> setButtonInfo(int index, ButtonInfo info): void</div>
+      <div><span class="vis-public">+</span> getButtonInfo(int index): ButtonInfo</div>
+      <div><span class="vis-public">+</span> getButtonName(int index): String</div>
+      <div><span class="vis-public">+</span> sendButtonsInfoJSON(): void</div>
+    </div>
+  </div>
+
+  <!-- ======== BluetoothManager ======== -->
+  <div class="uml-box theme-hardware" style="left:980px; top:1085px; width:240px;">
+    <div class="uml-header">BluetoothManager</div>
+    <div class="uml-section">
+      <div><span class="vis-private">-</span> pServer: BLEServer*</div>
+      <div><span class="vis-private">-</span> pCharacteristic: BLECharacteristic*</div>
+      <div><span class="vis-private">-</span> bleOnWriteCb: OnWriteCallback</div>
+      <div><span class="vis-private">-</span> bleOnConnectCb: OnConnectCallback</div>
+      <div><span class="vis-private">-</span> isDeviceConnected: bool</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> BluetoothManager()</div>
+      <div><span class="vis-public">+</span> begin(): void</div>
+      <div><span class="vis-public">+</span> attachOnWriteCallback(OnWriteCallback onWriteCb): void</div>
+      <div><span class="vis-public">+</span> attachOnConnectCallback(OnConnectCallback onConnectCb): void</div>
+      <div><span class="vis-public">+</span> sendJSON(const String &type, const JsonDocument &payload): void</div>
+      <div><span class="vis-public">+</span> sendError(const String &errorCode, const String &errorMessage): void</div>
+      <div><span class="vis-public">+</span> isConnected(): bool</div>
+    </div>
+  </div>
+
+  <!-- ======== TeaRecipe ======== -->
+  <div class="uml-box theme-model" style="left:40px; top:980px; width:220px;">
+    <div class="uml-header">
+      <span class="uml-stereotype">&laquo;struct&raquo;</span>
+      TeaRecipe
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> tea: int</div>
+      <div><span class="vis-public">+</span> condensedMilk: int</div>
+      <div><span class="vis-public">+</span> evaporatedMilk: int</div>
+      <div><span class="vis-public">+</span> milk: int</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> toJson(JsonObject obj) const: void</div>
+      <div><span class="vis-public">+</span> fromJson(JsonObjectConst obj): void</div>
+    </div>
+  </div>
+
+  <!-- ======== ButtonInfo ======== -->
+  <div class="uml-box theme-model" style="left:300px; top:980px; width:210px;">
+    <div class="uml-header">
+      <span class="uml-stereotype">&laquo;struct&raquo;</span>
+      ButtonInfo
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> name: String</div>
+      <div><span class="vis-public">+</span> recipe: TeaRecipe</div>
+    </div>
+    <div class="uml-section">
+      <div><span class="vis-public">+</span> toJson(JsonObject obj) const: void</div>
+      <div><span class="vis-public">+</span> fromJson(JsonObjectConst obj): void</div>
+    </div>
+  </div>
+
+  <!-- ======== Enums ======== -->
+  <div class="uml-box theme-model" style="left:560px; top:1125px; width:245px;">
+    <div class="uml-header">
+      <span class="uml-stereotype">&laquo;enum&raquo;</span>
+      TeaState
+    </div>
+    <div class="uml-section">
+      <div>IDLE | PREVIEW | MAKING</div>
+      <div>CLEANING | CALIBRATION</div>
+      <div>FINISHED | TARGET_ML</div>
+      <div>CUP_WARNING | WAITING_FOR_CUP | ERROR</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><svg width="30" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#3498db" stroke-width="2"/><polygon points="22,2 30,5 22,8" fill="white" stroke="#3498db" stroke-width="1.5"/></svg> Inheritance</div>
+  <div class="legend-item"><svg width="30" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#999" stroke-width="1.5" stroke-dasharray="4,2"/></svg> Dependency / Association</div>
+  <div class="legend-item"><span style="color:#c0392b; font-weight:600;">–</span> private</div>
+  <div class="legend-item"><span style="color:#8e44ad; font-weight:600;">#</span> protected</div>
+  <div class="legend-item"><span style="color:#27ae60; font-weight:600;">+</span> public</div>
+  <div class="legend-item"><em>italic</em> = abstract method</div>
+</div>
+</body>
+</html>

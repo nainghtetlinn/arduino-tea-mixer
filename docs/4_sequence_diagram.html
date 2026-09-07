@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sequence Diagram — Tea Brewing Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f8f9fa; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #6c757d; margin-bottom: 20px; }
+  .canvas { background: white; border-radius: 16px; box-shadow: 0 4px 32px rgba(0,0,0,0.10); padding: 0; width: 1280px; overflow: hidden; }
+
+  /* Header lifelines */
+  .lifeline-row { display: flex; background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 16px 0; }
+  .lifeline-head { flex: 1; text-align: center; padding: 8px 6px; }
+  .ll-box { display: inline-block; background: rgba(255,255,255,0.08); border: 2px solid; border-radius: 8px; padding: 6px 12px; font-size: 11.5px; font-weight: 700; color: white; min-width: 100px; }
+
+  /* Colors for each lifeline */
+  .ll-user     { border-color: #f39c12; }
+  .ll-btn      { border-color: #27ae60; }
+  .ll-tea      { border-color: #e74c3c; }
+  .ll-disp     { border-color: #3498db; }
+  .ll-sensor   { border-color: #9b59b6; }
+  .ll-relay    { border-color: #e67e22; }
+  .ll-strategy { border-color: #1abc9c; }
+  .ll-ble      { border-color: #2980b9; }
+
+  /* Diagram body */
+  .seq-body { position: relative; min-height: 1400px; }
+
+  svg.seq { width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<h1>📋 Sequence Diagram — Tea Brewing Flow</h1>
+<p class="subtitle">Main scenario: user presses button → previews recipe → confirms → cup check → dispensing → finished</p>
+
+<div class="canvas">
+  <!-- Lifeline headers -->
+  <div class="lifeline-row">
+    <div class="lifeline-head"><div class="ll-box ll-user">👤 User</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-btn">ButtonManager</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-tea">TeaManager</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-disp">DisplayManager</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-sensor">SensorManager</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-relay">RelayManager</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-strategy">Strategy</div></div>
+    <div class="lifeline-head"><div class="ll-box ll-ble">BluetoothManager</div></div>
+  </div>
+
+  <!-- SVG sequence body -->
+  <div class="seq-body">
+  <svg class="seq" viewBox="0 0 1280 1420" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#333"/></marker>
+      <marker id="arrR" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e74c3c"/></marker>
+      <marker id="arrG" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#27ae60"/></marker>
+      <marker id="arrB" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3498db"/></marker>
+      <marker id="arrO" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e67e22"/></marker>
+      <marker id="arrT" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#1abc9c"/></marker>
+      <marker id="arrP" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#9b59b6"/></marker>
+      <style>
+        text { font-family: 'Inter', sans-serif; }
+        .msg-lbl { font-size: 11px; fill: #222; font-weight: 500; }
+        .msg-ret { font-size: 10px; fill: #777; font-style: italic; }
+        .note-lbl { font-size: 10.5px; fill: #555; }
+        .grp-lbl { font-size: 11px; font-weight: 700; }
+      </style>
+    </defs>
+
+    <!-- ── Lifeline columns (x-centers) ──
+         User=80, Btn=262, Tea=444, Disp=626, Sensor=808, Relay=940, Strategy=1072, BLE=1204 -->
+
+    <!-- Vertical lifelines -->
+    <line x1="80"   y1="0" x2="80"   y2="1420" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="262"  y1="0" x2="262"  y2="1420" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="444"  y1="0" x2="444"  y2="1420" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="626"  y1="0" x2="626"  y2="1420" stroke="#3498db" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="808"  y1="0" x2="808"  y2="1420" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="940"  y1="0" x2="940"  y2="1420" stroke="#e67e22" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="1072" y1="0" x2="1072" y2="1420" stroke="#1abc9c" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+    <line x1="1204" y1="0" x2="1204" y2="1420" stroke="#2980b9" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+
+    <!-- ════════════ GROUP: PREVIEW ════════════ -->
+    <rect x="10" y="20" width="1260" height="200" rx="8" fill="#fff9e6" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.7"/>
+    <text x="20" y="38" class="grp-lbl" fill="#f39c12">loop [IDLE] — Button Press &amp; Preview</text>
+
+    <!-- 1. User presses button -->
+    <line x1="80" y1="55" x2="254" y2="55" stroke="#333" stroke-width="1.8" marker-end="url(#arr)"/>
+    <text x="115" y="50" class="msg-lbl">press button [index=1]</text>
+
+    <!-- 2. ButtonManager → TeaManager: handleButtonClick -->
+    <line x1="262" y1="75" x2="436" y2="75" stroke="#27ae60" stroke-width="1.8" marker-end="url(#arrG)"/>
+    <text x="278" y="70" class="msg-lbl">btnPressCb(btnIndex=1)</text>
+
+    <!-- 3. TeaManager: previewRecipe() -->
+    <rect x="436" y="85" width="16" height="30" fill="#e74c3c" rx="2"/>
+    <text x="455" y="104" class="msg-lbl">previewRecipe(1, info)</text>
+
+    <!-- 4. TeaManager → DisplayManager: showRecipePreviewScreen -->
+    <line x1="452" y1="100" x2="618" y2="100" stroke="#3498db" stroke-width="1.8" marker-end="url(#arrB)"/>
+    <text x="458" y="95" class="msg-lbl" fill="#3498db">showRecipePreviewScreen(name, recipe)</text>
+
+    <!-- 5. State: PREVIEW -->
+    <rect x="436" y="115" width="16" height="50" fill="#e74c3c" rx="2" opacity="0.5"/>
+    <text x="455" y="145" class="msg-lbl" fill="#e74c3c">state = PREVIEW</text>
+
+    <!-- 6. User presses same button again -->
+    <line x1="80" y1="175" x2="254" y2="175" stroke="#333" stroke-width="1.8" marker-end="url(#arr)"/>
+    <text x="100" y="170" class="msg-lbl">press button [index=1] again</text>
+
+    <!-- 7. ButtonManager → TeaManager: confirmBrew -->
+    <line x1="262" y1="195" x2="436" y2="195" stroke="#27ae60" stroke-width="1.8" marker-end="url(#arrG)"/>
+    <text x="278" y="190" class="msg-lbl">btnPressCb → confirmBrew()</text>
+
+    <!-- ════════════ GROUP: CUP CHECK ════════════ -->
+    <rect x="10" y="230" width="1260" height="130" rx="8" fill="#f0fff4" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.7"/>
+    <text x="20" y="248" class="grp-lbl" fill="#27ae60">alt [cup present] — Pre-Dispense Cup Check</text>
+
+    <!-- 8. TeaManager → SensorManager: getWeight -->
+    <line x1="452" y1="260" x2="800" y2="260" stroke="#9b59b6" stroke-width="1.8" marker-end="url(#arrP)"/>
+    <text x="470" y="255" class="msg-lbl">getWeight()</text>
+
+    <!-- 9. SensorManager returns weight -->
+    <line x1="800" y1="275" x2="460" y2="275" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrP)"/>
+    <text x="580" y="271" class="msg-ret">return 75.2g [≥ minCupWeight=50g]</text>
+
+    <!-- 10. [cup OK] scaleRecipeToTarget -->
+    <rect x="436" y="285" width="16" height="60" fill="#27ae60" rx="2"/>
+    <text x="455" y="310" class="msg-lbl" fill="#27ae60">scaleRecipeToTarget(recipe, 300ml)</text>
+    <text x="455" y="327" class="msg-lbl" fill="#555">state = MAKING</text>
+
+    <!-- [no cup] alt branch -->
+    <text x="20" y="345" class="grp-lbl" fill="#e74c3c" font-size="10">  alt [no cup] → state = WAITING_FOR_CUP, showPlaceCupScreen()</text>
+
+    <!-- ════════════ GROUP: DISPENSING ════════════ -->
+    <rect x="10" y="370" width="1260" height="420" rx="8" fill="#eaf7ff" stroke="#3498db" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.7"/>
+    <text x="20" y="388" class="grp-lbl" fill="#3498db">loop [MAKING] — Dispensing Tick (every 100ms)</text>
+
+    <!-- 11. TeaManager → Strategy: start(target) -->
+    <line x1="452" y1="400" x2="1064" y2="400" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#arrT)"/>
+    <text x="560" y="395" class="msg-lbl" fill="#1abc9c">activeStrategy.start(scaledRecipe)</text>
+
+    <!-- sendTeaStartJSON -->
+    <line x1="452" y1="420" x2="1196" y2="420" stroke="#2980b9" stroke-width="1.8" marker-end="url(#arrB)"/>
+    <text x="700" y="415" class="msg-lbl" fill="#2980b9">sendJSON("TEA_START", {tea:120, cm:60, em:60, milk:60})</text>
+
+    <!-- 12. update() tick -->
+    <rect x="436" y="435" width="16" height="320" fill="#e74c3c" rx="2" opacity="0.25"/>
+
+    <!-- cup removal check -->
+    <line x1="452" y1="450" x2="800" y2="450" stroke="#9b59b6" stroke-width="1.5" marker-end="url(#arrP)"/>
+    <text x="470" y="445" class="msg-lbl">getWeight() — cup removal check</text>
+    <line x1="800" y1="465" x2="460" y2="465" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrP)"/>
+    <text x="620" y="461" class="msg-ret">return 285.4g [OK]</text>
+
+    <!-- Strategy.update -->
+    <line x1="452" y1="490" x2="1064" y2="490" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#arrT)"/>
+    <text x="550" y="485" class="msg-lbl" fill="#1abc9c">activeStrategy.update(dispensed)</text>
+
+    <!-- Strategy → Relay: setRelay -->
+    <line x1="1072" y1="510" x2="948" y2="510" stroke="#e67e22" stroke-width="1.8" marker-end="url(#arrO)"/>
+    <text x="970" y="505" class="msg-lbl" fill="#e67e22">setRelay(0, true)</text>
+
+    <!-- Strategy → Sensor: getWeight -->
+    <line x1="1072" y1="530" x2="816" y2="530" stroke="#9b59b6" stroke-width="1.5" marker-end="url(#arrP)"/>
+    <text x="880" y="525" class="msg-lbl" fill="#9b59b6">getWeight()</text>
+    <line x1="816" y1="545" x2="1064" y2="545" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrT)"/>
+    <text x="900" y="541" class="msg-ret">return 147.2g</text>
+
+    <!-- update dispensed -->
+    <text x="1085" y="568" class="msg-lbl" fill="#1abc9c">dispensed.tea += delta</text>
+
+    <!-- returns false (not done) -->
+    <line x1="1064" y1="580" x2="460" y2="580" stroke="#1abc9c" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrG)"/>
+    <text x="640" y="575" class="msg-ret">return false (still dispensing)</text>
+
+    <!-- calculateProgress -->
+    <rect x="436" y="590" width="16" height="20" fill="#e74c3c" rx="2"/>
+    <text x="455" y="605" class="msg-lbl">calculateProgress() → 48%</text>
+
+    <!-- sendTeaProgressJSON -->
+    <line x1="452" y1="625" x2="1196" y2="625" stroke="#2980b9" stroke-width="1.5" marker-end="url(#arrB)"/>
+    <text x="700" y="620" class="msg-lbl" fill="#2980b9">sendJSON("TEA_PROGRESS", {progress: 48})</text>
+
+    <!-- … more ticks … -->
+    <text x="600" y="660" style="font-size:20px; fill:#aaa; text-anchor:middle;">. . . (more 100ms ticks) . . .</text>
+
+    <!-- final tick: done=true -->
+    <line x1="452" y1="695" x2="1064" y2="695" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#arrT)"/>
+    <text x="550" y="690" class="msg-lbl" fill="#1abc9c">activeStrategy.update(dispensed)</text>
+
+    <line x1="1064" y1="715" x2="460" y2="715" stroke="#1abc9c" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrG)"/>
+    <text x="640" y="711" class="msg-ret">return true (dispensing DONE)</text>
+
+    <!-- ════════════ GROUP: FINISH ════════════ -->
+    <rect x="10" y="800" width="1260" height="280" rx="8" fill="#f0fff4" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.7"/>
+    <text x="20" y="818" class="grp-lbl" fill="#27ae60">[FINISHED] — Cleanup &amp; Cup Detection</text>
+
+    <!-- finishDispensing() -->
+    <rect x="436" y="825" width="16" height="30" fill="#27ae60" rx="2"/>
+
+    <!-- relayMgr.stopAll() -->
+    <line x1="452" y1="840" x2="932" y2="840" stroke="#e67e22" stroke-width="1.8" marker-end="url(#arrO)"/>
+    <text x="560" y="835" class="msg-lbl" fill="#e67e22">relayMgr.stopAll()</text>
+
+    <!-- state = FINISHED -->
+    <text x="455" y="870" class="msg-lbl" fill="#27ae60">state = FINISHED, progress = 100%</text>
+
+    <!-- sendTeaFinishedJSON -->
+    <line x1="452" y1="890" x2="1196" y2="890" stroke="#2980b9" stroke-width="1.8" marker-end="url(#arrB)"/>
+    <text x="680" y="885" class="msg-lbl" fill="#2980b9">sendJSON("TEA_FINISH", {tea:120, condensedMilk:60, ...})</text>
+
+    <!-- showTeaReadyScreen -->
+    <line x1="452" y1="915" x2="618" y2="915" stroke="#3498db" stroke-width="1.8" marker-end="url(#arrB)"/>
+    <text x="455" y="910" class="msg-lbl" fill="#3498db">showTeaReadyScreen()</text>
+
+    <!-- User removes cup -->
+    <line x1="80" y1="950" x2="254" y2="950" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="90" y="945" class="msg-lbl" fill="#aaa">user takes cup</text>
+
+    <!-- SensorManager detects weight drop -->
+    <line x1="452" y1="970" x2="800" y2="970" stroke="#9b59b6" stroke-width="1.5" marker-end="url(#arrP)"/>
+    <text x="560" y="965" class="msg-lbl">getWeight()</text>
+    <line x1="800" y1="985" x2="460" y2="985" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrP)"/>
+    <text x="590" y="981" class="msg-ret">return 5.1g [&lt; 30% of 285.4g]</text>
+
+    <!-- state = IDLE -->
+    <text x="455" y="1010" class="msg-lbl" fill="#27ae60">state = IDLE, progress = 0%</text>
+
+    <!-- sendCupRemovedJSON -->
+    <line x1="452" y1="1025" x2="1196" y2="1025" stroke="#2980b9" stroke-width="1.5" marker-end="url(#arrB)"/>
+    <text x="680" y="1020" class="msg-lbl" fill="#2980b9">sendJSON("CUP_REMOVED", {})</text>
+
+    <!-- showIdleScreen -->
+    <line x1="452" y1="1050" x2="618" y2="1050" stroke="#3498db" stroke-width="1.5" marker-end="url(#arrB)"/>
+    <text x="455" y="1045" class="msg-lbl" fill="#3498db">showIdleScreen(btn1, btn2, btn3, …)</text>
+
+    <!-- ════════════ Alt: CUP WARNING ════════════ -->
+    <rect x="10" y="1090" width="1260" height="180" rx="8" fill="#fff0f0" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.7"/>
+    <text x="20" y="1108" class="grp-lbl" fill="#e74c3c">alt [Cup Removed Mid-Dispense] — CUP_WARNING</text>
+
+    <line x1="452" y1="1120" x2="800" y2="1120" stroke="#9b59b6" stroke-width="1.5" marker-end="url(#arrP)"/>
+    <text x="545" y="1115" class="msg-lbl">getWeight() → 3.2g [&lt; minCupWeight]</text>
+
+    <text x="455" y="1145" class="msg-lbl" fill="#e74c3c">activeStrategy.stop() — emergency halt</text>
+
+    <line x1="452" y1="1160" x2="932" y2="1160" stroke="#e67e22" stroke-width="1.8" marker-end="url(#arrO)"/>
+    <text x="550" y="1155" class="msg-lbl" fill="#e67e22">relayMgr.stopAll()</text>
+
+    <text x="455" y="1185" class="msg-lbl" fill="#e74c3c">state = CUP_WARNING</text>
+
+    <line x1="452" y1="1200" x2="618" y2="1200" stroke="#3498db" stroke-width="1.5" marker-end="url(#arrB)"/>
+    <text x="455" y="1195" class="msg-lbl" fill="#3498db">showCupRemovedWarningScreen()</text>
+
+    <line x1="452" y1="1225" x2="1196" y2="1225" stroke="#2980b9" stroke-width="1.5" marker-end="url(#arrB)"/>
+    <text x="690" y="1220" class="msg-lbl" fill="#2980b9">sendJSON("CUP_WARNING", {})</text>
+
+    <text x="460" y="1255" class="msg-lbl" fill="#777">[auto-dismiss after 5s or button press → state = IDLE]</text>
+
+  </svg>
+  </div>
+</div>
+</body>
+</html>

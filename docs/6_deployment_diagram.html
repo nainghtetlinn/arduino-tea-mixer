@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deployment Diagram — Project Tea Hardware</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: linear-gradient(160deg, #0f2027, #203a43, #2c5364); min-height:100vh; font-family:'Inter',sans-serif; display:flex; flex-direction:column; align-items:center; padding:28px; }
+  h1 { font-size:22px; font-weight:700; color:#e8f4fd; margin-bottom:6px; }
+  .subtitle { font-size:13px; color:#9ec5d8; margin-bottom:22px; }
+  .canvas { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:18px; backdrop-filter:blur(8px); padding:30px; width:1200px; height:780px; position:relative; box-shadow:0 8px 48px rgba(0,0,0,0.4); }
+
+  /* Node boxes */
+  .node { position:absolute; border-radius:12px; }
+  .node-header { border-radius:10px 10px 0 0; padding:7px 14px; font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; display:flex; align-items:center; gap:6px; }
+  .node-body { border-radius:0 0 10px 10px; padding:10px 14px; font-size:11.5px; line-height:1.7; }
+
+  /* Artifact chips */
+  .artifact { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:3px 9px; font-size:10.5px; color:rgba(255,255,255,0.85); margin:2px 0; font-weight:500; }
+
+  /* Colours */
+  .n-esp32   { background:rgba(231,76,60,0.15); border:2px solid #e74c3c; }
+  .n-esp32   .node-header { background:rgba(231,76,60,0.6); color:white; }
+
+  .n-sensor  { background:rgba(155,89,182,0.15); border:2px solid #9b59b6; }
+  .n-sensor  .node-header { background:rgba(155,89,182,0.6); color:white; }
+
+  .n-relay   { background:rgba(230,126,34,0.15); border:2px solid #e67e22; }
+  .n-relay   .node-header { background:rgba(230,126,34,0.6); color:white; }
+
+  .n-display { background:rgba(52,152,219,0.15); border:2px solid #3498db; }
+  .n-display .node-header { background:rgba(52,152,219,0.6); color:white; }
+
+  .n-btn     { background:rgba(39,174,96,0.15); border:2px solid #27ae60; }
+  .n-btn     .node-header { background:rgba(39,174,96,0.6); color:white; }
+
+  .n-mobile  { background:rgba(41,128,185,0.15); border:2px solid #2980b9; }
+  .n-mobile  .node-header { background:rgba(41,128,185,0.6); color:white; }
+
+  .n-psu     { background:rgba(127,140,141,0.15); border:2px solid #7f8c8d; }
+  .n-psu     .node-header { background:rgba(127,140,141,0.6); color:white; }
+
+  svg.overlay { position:absolute; top:0; left:0; pointer-events:none; }
+
+  .iface-ball { position:absolute; width:10px; height:10px; border-radius:50%; background:white; border:2px solid; box-shadow:0 0 6px rgba(255,255,255,0.3); }
+
+  .badge { position:absolute; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:3px 8px; font-size:10px; color:rgba(255,255,255,0.7); font-weight:500; white-space:nowrap; }
+</style>
+</head>
+<body>
+<h1>🖥️ Deployment Diagram — Project Tea (ESP32 Hardware)</h1>
+<p class="subtitle">Physical topology: hardware nodes, firmware artifacts, and communication links</p>
+
+<div class="canvas">
+  <svg class="overlay" width="1200" height="780">
+    <defs>
+      <marker id="aw" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="rgba(255,255,255,0.5)"/></marker>
+      <marker id="aRed" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e74c3c"/></marker>
+      <marker id="aPur" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#9b59b6"/></marker>
+      <marker id="aOr" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e67e22"/></marker>
+      <marker id="aBlu" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#3498db"/></marker>
+      <marker id="aGr" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#27ae60"/></marker>
+      <style>
+        .conn { fill:none; stroke-width:1.8; }
+        .lbl { font-family:'Inter',sans-serif; font-size:10px; fill:rgba(255,255,255,0.6); }
+      </style>
+    </defs>
+
+    <!-- ESP32 → HX711 Load Cell -->
+    <path d="M 415 250 C 415 320, 210 320, 210 380" class="conn" stroke="#9b59b6" stroke-dasharray="5,3" marker-end="url(#aPur)"/>
+    <text x="275" y="317" class="lbl">SPI / HX711 DOUT+CLK</text>
+
+    <!-- ESP32 → DS18B20 -->
+    <path d="M 380 250 C 380 350, 150 350, 150 460" class="conn" stroke="#9b59b6" stroke-dasharray="5,3" marker-end="url(#aPur)"/>
+    <text x="165" y="360" class="lbl">1-Wire GPIO</text>
+
+    <!-- ESP32 → Relay Board -->
+    <path d="M 650 250 C 700 310, 760 330, 800 380" class="conn" stroke="#e67e22" stroke-width="2" marker-end="url(#aOr)"/>
+    <text x="710" y="320" class="lbl">4× GPIO (digital out)</text>
+
+    <!-- ESP32 → OLED Display -->
+    <path d="M 550 250 C 550 320, 490 340, 490 380" class="conn" stroke="#3498db" stroke-dasharray="5,3" marker-end="url(#aBlu)"/>
+    <text x="500" y="320" class="lbl">I2C SDA/SCL</text>
+
+    <!-- ESP32 → Buttons -->
+    <path d="M 420 250 C 420 330, 350 350, 330 380" class="conn" stroke="#27ae60" stroke-dasharray="5,3" marker-end="url(#aGr)"/>
+    <text x="340" y="320" class="lbl">3× GPIO (pull-up)</text>
+
+    <!-- ESP32 → BLE Mobile -->
+    <path d="M 700 200 C 820 180, 900 180, 980 200" class="conn" stroke="#2980b9" stroke-width="2.2" stroke-dasharray="8,4" marker-end="url(#aBlu)"/>
+    <text x="845" y="175" class="lbl">BLE 4.2 GATT (wireless)</text>
+
+    <!-- PSU → ESP32 -->
+    <path d="M 560 660 C 560 620, 560 570, 560 470" class="conn" stroke="rgba(255,255,255,0.35)" marker-end="url(#aw)"/>
+    <text x="568" y="595" class="lbl">3.3V / 5V regulated</text>
+
+    <!-- PSU → Relay -->
+    <path d="M 620 660 C 720 650, 800 620, 860 590" class="conn" stroke="rgba(255,255,255,0.3)" stroke-dasharray="4,3" marker-end="url(#aw)"/>
+    <text x="720" y="660" class="lbl">5V DC</text>
+
+    <!-- Relay → Tea containers -->
+    <path d="M 1040 455 C 1080 455, 1100 440, 1120 420" class="conn" stroke="#e67e22" stroke-width="1.5" marker-end="url(#aOr)"/>
+    <path d="M 1040 485 C 1080 485, 1100 500, 1120 510" class="conn" stroke="#e67e22" stroke-width="1.5" marker-end="url(#aOr)"/>
+    <path d="M 1040 515 C 1080 515, 1100 540, 1120 555" class="conn" stroke="#e67e22" stroke-width="1.5" marker-end="url(#aOr)"/>
+    <path d="M 1040 545 C 1080 545, 1100 600, 1120 610" class="conn" stroke="#e67e22" stroke-width="1.5" marker-end="url(#aOr)"/>
+
+  </svg>
+
+  <!-- ══ ESP32 MCU ══ -->
+  <div class="node n-esp32" style="left:330px; top:60px; width:340px;">
+    <div class="node-header">⚡ &lt;&lt;device&gt;&gt; ESP32 Microcontroller</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.85);">
+      <div style="font-size:11px; color:rgba(255,255,255,0.55); margin-bottom:6px;">Firmware Artifacts:</div>
+      <div class="artifact">📦 project_tea.ino</div>
+      <div class="artifact">☕ TeaManager.cpp</div>
+      <div class="artifact">📡 BluetoothManager.cpp</div>
+      <div class="artifact">🔌 RelayManager.cpp</div>
+      <div class="artifact">🖥️ DisplayManager.cpp</div>
+      <div class="artifact">🔘 ButtonManager.cpp</div>
+      <div class="artifact">🌡️ SensorManager.cpp</div>
+      <div class="artifact">⚖️ WeightDispensingStrategy.cpp</div>
+      <div class="artifact">⏱️ TimeDispensingStrategy.cpp</div>
+      <div class="artifact">🧹 CleaningMode.cpp</div>
+      <div style="margin-top:8px; font-size:10.5px; color:rgba(255,255,255,0.5);">NVS Flash: Preferences (tea_settings)</div>
+      <div style="font-size:10.5px; color:rgba(255,255,255,0.5);">BLE Stack: ESP32 Arduino BLE library</div>
+    </div>
+  </div>
+
+  <!-- ══ Sensor Nodes ══ -->
+  <div class="node n-sensor" style="left:60px; top:380px; width:180px;">
+    <div class="node-header">⚖️ HX711 + Load Cell</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.8);">
+      <div style="font-size:10.5px;">24-bit ADC</div>
+      <div style="font-size:10.5px;">Strain gauge amplifier</div>
+      <div style="font-size:10.5px; color:#9b59b6; margin-top:4px;">≤ 0–5000g range</div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.4); margin-top:4px;">DOUT + CLK GPIO</div>
+    </div>
+  </div>
+
+  <div class="node n-sensor" style="left:60px; top:490px; width:180px;">
+    <div class="node-header">🌡️ DS18B20 Sensor</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.8);">
+      <div style="font-size:10.5px;">Dallas 1-Wire protocol</div>
+      <div style="font-size:10.5px;">-55°C to +125°C</div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.4); margin-top:4px;">Single GPIO pin</div>
+    </div>
+  </div>
+
+  <!-- ══ OLED Display ══ -->
+  <div class="node n-display" style="left:330px; top:380px; width:200px;">
+    <div class="node-header">🖥️ OLED Display SSD1306</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.8);">
+      <div style="font-size:10.5px;">128×64 px monochrome</div>
+      <div style="font-size:10.5px;">I2C address 0x3C</div>
+      <div style="font-size:10.5px; margin-top:4px;">Adafruit SSD1306 lib</div>
+      <div style="font-size:10.5px; color:#3498db;">Screens: 10 distinct views</div>
+    </div>
+  </div>
+
+  <!-- ══ Buttons ══ -->
+  <div class="node n-btn" style="left:250px; top:490px; width:200px;">
+    <div class="node-header">🔘 3× Push Buttons</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.8);">
+      <div style="font-size:10.5px;">OneButton library</div>
+      <div style="font-size:10.5px;">Click + Long-hold combos</div>
+      <div style="font-size:10.5px; color:#27ae60; margin-top:4px;">Btn1+Btn3: Cleaning</div>
+      <div style="font-size:10.5px; color:#27ae60;">Btn1+Btn2: Calibration</div>
+    </div>
+  </div>
+
+  <!-- ══ Relay Board ══ -->
+  <div class="node n-relay" style="left:800px; top:380px; width:240px;">
+    <div class="node-header">⚡ 4-Channel Relay Module</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.8);">
+      <div style="font-size:10.5px; margin-bottom:4px;">Controls ingredient valves:</div>
+      <div style="font-size:10.5px;">Relay 0 → <span style="color:#e67e22;">Tea</span></div>
+      <div style="font-size:10.5px;">Relay 1 → <span style="color:#e67e22;">Condensed Milk</span></div>
+      <div style="font-size:10.5px;">Relay 2 → <span style="color:#e67e22;">Evaporated Milk</span></div>
+      <div style="font-size:10.5px;">Relay 3 → <span style="color:#e67e22;">Milk</span></div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.4); margin-top:4px;">Active LOW / 5V coil</div>
+    </div>
+  </div>
+
+  <!-- ══ Ingredient containers (right) ══ -->
+  <div style="position:absolute; left:1080px; top:390px; width:100px; text-align:center; color:rgba(255,255,255,0.6);">
+    <div style="font-size:20px;">🫖</div><div style="font-size:10px; margin-top:2px;">Tea Tank</div>
+  </div>
+  <div style="position:absolute; left:1080px; top:460px; width:100px; text-align:center; color:rgba(255,255,255,0.6);">
+    <div style="font-size:20px;">🥛</div><div style="font-size:10px; margin-top:2px;">Condensed Milk</div>
+  </div>
+  <div style="position:absolute; left:1080px; top:530px; width:100px; text-align:center; color:rgba(255,255,255,0.6);">
+    <div style="font-size:20px;">🥛</div><div style="font-size:10px; margin-top:2px;">Evap. Milk</div>
+  </div>
+  <div style="position:absolute; left:1080px; top:600px; width:100px; text-align:center; color:rgba(255,255,255,0.6);">
+    <div style="font-size:20px;">🥛</div><div style="font-size:10px; margin-top:2px;">Milk Tank</div>
+  </div>
+
+  <!-- ══ Mobile App ══ -->
+  <div class="node n-mobile" style="left:920px; top:80px; width:220px;">
+    <div class="node-header">📱 &lt;&lt;device&gt;&gt; BLE Mobile App</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.8);">
+      <div style="font-size:10.5px;">GATT Client</div>
+      <div style="font-size:10.5px;">Sends JSON commands:</div>
+      <div style="font-size:10px; color:#2980b9;">MAKE_TEA, SET_BUTTON_INFO</div>
+      <div style="font-size:10px; color:#2980b9;">GET_DEVICE_INFO, SET_TARGET_ML</div>
+      <div style="font-size:10.5px; margin-top:4px;">Receives notifications:</div>
+      <div style="font-size:10px; color:#3498db;">TEA_PROGRESS, TEA_FINISH</div>
+      <div style="font-size:10px; color:#3498db;">CUP_WARNING, CLEANING_*</div>
+    </div>
+  </div>
+
+  <!-- ══ PSU ══ -->
+  <div class="node n-psu" style="left:460px; top:650px; width:200px;">
+    <div class="node-header">🔋 Power Supply Unit</div>
+    <div class="node-body" style="color:rgba(255,255,255,0.7);">
+      <div style="font-size:10.5px;">5V DC regulated</div>
+      <div style="font-size:10.5px;">ESP32 3.3V via onboard LDO</div>
+      <div style="font-size:10.5px;">Relay coil: 5V DC</div>
+    </div>
+  </div>
+
+  <!-- Interface labels -->
+  <div class="badge" style="left:670px; top:163px;">BLE 4.2 GATT / JSON</div>
+  <div class="badge" style="left:214px; top:300px;">SPI + GPIO</div>
+  <div class="badge" style="left:695px; top:295px;">GPIO Digital Out</div>
+  <div class="badge" style="left:480px; top:295px;">I²C</div>
+
+</div>
+</body>
+</html>

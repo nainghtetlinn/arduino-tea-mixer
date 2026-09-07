@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>State Machine Diagram — Project Tea</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f0f4f8; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #6c757d; margin-bottom: 20px; }
+  .canvas { background: white; border-radius: 16px; box-shadow: 0 4px 32px rgba(0,0,0,0.10); padding: 20px; position: relative; width: 1100px; height: 900px; overflow: hidden; }
+
+  .state { position: absolute; border-radius: 50px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; text-align: center; box-shadow: 0 3px 12px rgba(0,0,0,0.15); transition: all 0.2s; cursor: default; }
+  .state:hover { transform: scale(1.04); }
+
+  /* State colours */
+  .s-idle    { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+  .s-preview { background: linear-gradient(135deg, #f7971e, #ffd200); color: #333; }
+  .s-making  { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+  .s-finished{ background: linear-gradient(135deg, #1a9850, #00b09b); color: white; }
+  .s-cleaning{ background: linear-gradient(135deg, #2193b0, #6dd5ed); color: white; }
+  .s-calib   { background: linear-gradient(135deg, #8360c3, #2ebf91); color: white; }
+  .s-cupwarn { background: linear-gradient(135deg, #e52d27, #b31217); color: white; }
+  .s-waiting { background: linear-gradient(135deg, #f09819, #edde5d); color: #333; }
+  .s-error   { background: linear-gradient(135deg, #232526, #414345); color: white; }
+
+  /* Initial/final pseudo-states */
+  .s-start { position: absolute; width: 24px; height: 24px; border-radius: 50%; background: #1a1a2e; }
+  .s-end   { position: absolute; width: 24px; height: 24px; border-radius: 50%; background: white; border: 3px solid #1a1a2e; box-shadow: inset 0 0 0 5px #1a1a2e; }
+
+  svg.arrows { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<h1>🔄 State Machine Diagram — TeaManager</h1>
+<p class="subtitle">All states and transitions of the top-level state machine in TeaManager.cpp</p>
+
+<div class="canvas">
+  <svg class="arrows">
+    <defs>
+      <marker id="arr" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#555"/>
+      </marker>
+      <marker id="arrW" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#e74c3c"/>
+      </marker>
+      <marker id="arrG" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#27ae60"/>
+      </marker>
+      <marker id="arrB" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#2980b9"/>
+      </marker>
+      <style>
+        .lbl { font-family: 'Inter', sans-serif; font-size: 10.5px; fill: #333; font-weight: 500; }
+        .lbl-guard { font-family: 'Inter', sans-serif; font-size: 9.5px; fill: #777; }
+        .t-default  { stroke: #555; stroke-width: 1.6; fill: none; marker-end: url(#arr); }
+        .t-warn     { stroke: #e74c3c; stroke-width: 1.8; fill: none; marker-end: url(#arrW); }
+        .t-ok       { stroke: #27ae60; stroke-width: 1.8; fill: none; marker-end: url(#arrG); }
+        .t-ble      { stroke: #2980b9; stroke-width: 1.6; fill: none; marker-end: url(#arrB); }
+      </style>
+    </defs>
+
+    <!-- ── Start → IDLE ── -->
+    <line x1="480" y1="36" x2="480" y2="68" class="t-default"/>
+
+    <!-- ── IDLE → PREVIEW: Button press ── -->
+    <path d="M 440 120 C 290 120, 240 250, 250 300" class="t-default"/>
+    <text x="270" y="200" class="lbl">button press</text>
+    <text x="270" y="213" class="lbl-guard">[state==IDLE]</text>
+
+    <!-- ── PREVIEW → IDLE: timeout / cancel ── -->
+    <path d="M 265 350 C 265 430, 370 450, 430 165" class="t-warn"/>
+    <text x="195" y="410" class="lbl" fill="#e74c3c">timeout / cancel</text>
+
+    <!-- ── PREVIEW → MAKING: confirmBrew() ── -->
+    <path d="M 320 310 C 400 310, 440 360, 460 390" class="t-ok"/>
+    <text x="348" y="350" class="lbl" fill="#27ae60">confirmBrew()</text>
+    <text x="348" y="363" class="lbl-guard">[cup present]</text>
+
+    <!-- ── PREVIEW → WAITING_FOR_CUP ── -->
+    <path d="M 310 330 C 310 500, 550 560, 650 560" class="t-warn"/>
+    <text x="360" y="510" class="lbl" fill="#e74c3c">confirmBrew()</text>
+    <text x="360" y="523" class="lbl-guard">[no cup]</text>
+
+    <!-- ── WAITING_FOR_CUP → MAKING ── -->
+    <path d="M 660 525 C 620 450, 560 430, 520 430" class="t-ok"/>
+    <text x="560" y="465" class="lbl" fill="#27ae60">cup placed + 1s</text>
+
+    <!-- ── MAKING → FINISHED ── -->
+    <path d="M 520 460 C 580 460, 680 430, 720 380" class="t-ok"/>
+    <text x="598" y="435" class="lbl" fill="#27ae60">all dispensed</text>
+
+    <!-- ── MAKING → CUP_WARNING ── -->
+    <path d="M 490 460 C 490 560, 600 620, 680 650" class="t-warn"/>
+    <text x="505" y="590" class="lbl" fill="#e74c3c">cup removed</text>
+    <text x="505" y="603" class="lbl-guard">[mid-dispense]</text>
+
+    <!-- ── FINISHED → IDLE ── -->
+    <path d="M 760 320 C 830 280, 830 160, 560 130" class="t-default"/>
+    <text x="800" y="220" class="lbl">cup removed</text>
+    <text x="800" y="233" class="lbl-guard">[weight &lt; 30%]</text>
+
+    <!-- ── IDLE → CLEANING ── -->
+    <path d="M 480 145 C 480 200, 690 230, 780 260" class="t-ble"/>
+    <text x="605" y="215" class="lbl" fill="#2980b9">btn1+btn3 hold</text>
+
+    <!-- ── CLEANING → IDLE ── -->
+    <path d="M 810 280 C 850 230, 860 160, 570 133" class="t-default" stroke-dasharray="5,3"/>
+    <text x="840" y="190" class="lbl">done / cancel</text>
+
+    <!-- ── IDLE → CALIBRATION ── -->
+    <path d="M 510 140 C 600 150, 730 175, 780 190" class="t-ble"/>
+    <text x="635" y="145" class="lbl" fill="#2980b9">btn1+btn2 hold</text>
+
+    <!-- ── CALIBRATION → IDLE ── -->
+    <path d="M 792 200 C 840 185, 860 150, 575 128" class="t-default" stroke-dasharray="5,3"/>
+
+    <!-- ── CUP_WARNING → IDLE ── -->
+    <path d="M 700 660 C 700 750, 500 760, 470 750 C 420 740, 400 600, 430 165" class="t-default" stroke-dasharray="4,3"/>
+    <text x="700" y="745" class="lbl">dismiss / timeout</text>
+
+    <!-- ── BLE startMakingTea → WAITING_FOR_CUP or MAKING ── -->
+    <path d="M 940 430 C 870 480, 790 530, 755 545" class="t-ble"/>
+    <text x="845" y="500" class="lbl" fill="#2980b9">BLE: MAKE_TEA</text>
+
+  </svg>
+
+  <!-- ── Pseudo start ── -->
+  <div class="s-start" style="left:468px; top:12px;"></div>
+
+  <!-- ── IDLE ── -->
+  <div class="state s-idle" style="left:380px; top:68px; width:200px; height:54px;">
+    IDLE
+  </div>
+
+  <!-- ── PREVIEW ── -->
+  <div class="state s-preview" style="left:170px; top:278px; width:160px; height:54px;">
+    PREVIEW
+  </div>
+
+  <!-- ── MAKING ── -->
+  <div class="state s-making" style="left:410px; top:390px; width:160px; height:54px;">
+    MAKING
+  </div>
+
+  <!-- ── FINISHED ── -->
+  <div class="state s-finished" style="left:700px; top:292px; width:160px; height:54px;">
+    FINISHED
+  </div>
+
+  <!-- ── CLEANING ── -->
+  <div class="state s-cleaning" style="left:750px; top:244px; width:160px; height:54px; display:none;"></div>
+  <div class="state s-cleaning" style="left:760px; top:248px; width:155px; height:48px;">
+    CLEANING
+  </div>
+
+  <!-- ── CALIBRATION ── -->
+  <div class="state s-calib" style="left:760px; top:170px; width:155px; height:48px;">
+    CALIBRATION
+  </div>
+
+  <!-- ── CUP_WARNING ── -->
+  <div class="state s-cupwarn" style="left:660px; top:620px; width:165px; height:54px;">
+    CUP_WARNING
+  </div>
+
+  <!-- ── WAITING_FOR_CUP ── -->
+  <div class="state s-waiting" style="left:630px; top:530px; width:180px; height:48px;">
+    WAITING_FOR_CUP
+  </div>
+
+  <!-- ── BLE trigger box ── -->
+  <div style="position:absolute; left:880px; top:400px; background:#eaf3fb; border:2px dashed #2980b9; border-radius:8px; padding:10px 14px; font-size:11px; color:#2980b9; font-weight:600; text-align:center;">
+    📱 BLE Client<br/><span style="font-weight:400; color:#555;">MAKE_TEA command</span>
+  </div>
+
+  <!-- ── Legend ── -->
+  <div style="position:absolute; bottom:18px; left:20px; display:flex; gap:20px; font-size:11px; color:#555; align-items:center; background:#f8f9fa; padding:8px 14px; border-radius:8px; border: 1px solid #e0e0e0;">
+    <span style="font-weight:600;">Legend:</span>
+    <span>
+      <svg width="30" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="#27ae60" stroke-width="2"/><polygon points="22,2 30,5 22,8" fill="#27ae60"/></svg>
+      Success / normal
+    </span>
+    <span>
+      <svg width="30" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="#e74c3c" stroke-width="2"/><polygon points="22,2 30,5 22,8" fill="#e74c3c"/></svg>
+      Warning / error
+    </span>
+    <span>
+      <svg width="30" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="#2980b9" stroke-width="1.8"/><polygon points="22,2 30,5 22,8" fill="#2980b9"/></svg>
+      BLE / user input
+    </span>
+    <span>
+      <svg width="30" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="#555" stroke-width="1.5" stroke-dasharray="4,2"/><polygon points="22,2 30,5 22,8" fill="#555"/></svg>
+      Return to IDLE
+    </span>
+  </div>
+</div>
+</body>
+</html>

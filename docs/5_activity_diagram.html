@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Activity Diagram — Dispensing Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: #f0f2f5; font-family: 'Inter', sans-serif; display:flex; flex-direction:column; align-items:center; padding:24px; }
+  h1 { font-size:22px; font-weight:700; color:#1a1a2e; margin-bottom:6px; }
+  .subtitle { font-size:13px; color:#6c757d; margin-bottom:20px; }
+  .canvas { background:white; border-radius:16px; box-shadow:0 4px 32px rgba(0,0,0,0.10); overflow:hidden; }
+</style>
+</head>
+<body>
+<h1>⚡ Activity Diagram — Dispensing Flow</h1>
+<p class="subtitle">Complete activity flow: from user input to tea ready, including dispensing strategy branching and error handling</p>
+
+<div class="canvas">
+<svg viewBox="0 0 800 1600" width="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#555"/></marker>
+    <marker id="aG" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#27ae60"/></marker>
+    <marker id="aR" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e74c3c"/></marker>
+    <marker id="aB" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3498db"/></marker>
+    <marker id="aY" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f39c12"/></marker>
+    <style>
+      text { font-family:'Inter',sans-serif; }
+      .activity { font-size:12.5px; font-weight:600; fill:#1a1a2e; }
+      .guard   { font-size:10.5px; fill:#666; font-style:italic; }
+      .note    { font-size:10px; fill:#888; }
+    </style>
+    <filter id="shadow"><feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.12"/></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="1600" fill="#f8f9fa"/>
+
+  <!-- Swimlane divider (User | System) -->
+  <line x1="200" y1="0" x2="200" y2="1600" stroke="#dde" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="90" y="25" text-anchor="middle" font-size="11" font-weight="700" fill="#999" letter-spacing="1">👤 USER</text>
+  <text x="500" y="25" text-anchor="middle" font-size="11" font-weight="700" fill="#999" letter-spacing="1">⚙️  SYSTEM</text>
+
+  <!-- ─── Start ─── -->
+  <circle cx="400" cy="55" r="14" fill="#1a1a2e"/>
+  <text x="420" y="60" class="note">initial</text>
+  <line x1="400" y1="69" x2="400" y2="90" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── IDLE ─── -->
+  <rect x="280" y="92" width="240" height="42" rx="21" fill="#667eea" filter="url(#shadow)"/>
+  <text x="400" y="118" text-anchor="middle" class="activity" fill="white">IDLE — Waiting</text>
+  <line x1="400" y1="134" x2="400" y2="155" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── [Button press] ─── -->
+  <rect x="278" y="157" width="244" height="36" rx="8" fill="#fff9e6" stroke="#f39c12" stroke-width="1.5"/>
+  <text x="400" y="180" text-anchor="middle" font-size="11.5" font-weight="600" fill="#c0830a">👤 Button pressed (index i)</text>
+  <line x1="400" y1="193" x2="400" y2="214" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── Show Preview ─── -->
+  <rect x="280" y="216" width="240" height="40" rx="20" fill="#f7971e" stroke="none" filter="url(#shadow)"/>
+  <text x="400" y="241" text-anchor="middle" class="activity" fill="white">Show Recipe Preview Screen</text>
+  <line x1="400" y1="256" x2="400" y2="277" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── 7s timeout decision ─── -->
+  <polygon points="400,279 460,310 400,341 340,310" fill="#fff8e7" stroke="#f39c12" stroke-width="1.8" filter="url(#shadow)"/>
+  <text x="400" y="315" text-anchor="middle" class="guard">timeout?</text>
+
+  <!-- timeout → cancel preview → back to IDLE -->
+  <line x1="340" y1="310" x2="200" y2="310" stroke="#e74c3c" stroke-width="1.5" marker-end="url(#aR)"/>
+  <text x="235" y="303" class="guard" fill="#e74c3c">yes (7s)</text>
+  <line x1="200" y1="310" x2="200" y2="113" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="200" y1="113" x2="279" y2="113" stroke="#e74c3c" stroke-width="1.5" marker-end="url(#aR)"/>
+  <text x="150" y="213" class="note" fill="#e74c3c" transform="rotate(-90,150,213)">cancel → IDLE</text>
+
+  <!-- no → confirmBrew -->
+  <line x1="400" y1="341" x2="400" y2="362" stroke="#27ae60" stroke-width="1.5" marker-end="url(#aG)"/>
+  <text x="408" y="355" class="guard" fill="#27ae60">no — confirm</text>
+
+  <!-- ─── Cup Check ─── -->
+  <polygon points="400,364 465,396 400,428 335,396" fill="#e8f5e9" stroke="#27ae60" stroke-width="1.8" filter="url(#shadow)"/>
+  <text x="400" y="392" text-anchor="middle" class="guard">cup ≥ minCupWeight?</text>
+  <text x="400" y="407" text-anchor="middle" class="guard">(50g default)</text>
+
+  <!-- No cup → WAITING_FOR_CUP -->
+  <line x1="465" y1="396" x2="640" y2="396" stroke="#e74c3c" stroke-width="1.5" marker-end="url(#aR)"/>
+  <text x="490" y="389" class="guard" fill="#e74c3c">no cup</text>
+  <rect x="642" y="376" width="140" height="40" rx="10" fill="#ffe5e5" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="712" y="401" text-anchor="middle" font-size="11" font-weight="600" fill="#c0392b">Show "Place Cup"</text>
+  <text x="712" y="413" text-anchor="middle" class="note" fill="#c0392b">WAITING_FOR_CUP</text>
+  <!-- waits until cup placed then loops back -->
+  <line x1="712" y1="416" x2="712" y2="450" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="712" y1="450" x2="467" y2="450" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="467" y1="450" x2="467" y2="430" stroke="#e74c3c" stroke-width="1.5" marker-end="url(#aR)"/>
+  <text x="590" y="463" class="note" fill="#e74c3c">cup placed + 1s settle</text>
+
+  <!-- Cup OK → scale recipe -->
+  <line x1="400" y1="428" x2="400" y2="449" stroke="#27ae60" stroke-width="1.5" marker-end="url(#aG)"/>
+  <text x="345" y="442" class="guard" fill="#27ae60">cup OK</text>
+
+  <!-- ─── Scale Recipe ─── -->
+  <rect x="270" y="451" width="260" height="40" rx="8" fill="#e8f5e9" stroke="#27ae60" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="400" y="476" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1e7e34">scaleRecipeToTarget(recipe, 300ml)</text>
+  <line x1="400" y1="491" x2="400" y2="512" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── Strategy Decision ─── -->
+  <polygon points="400,514 468,548 400,582 332,548" fill="#eaf4fc" stroke="#3498db" stroke-width="1.8" filter="url(#shadow)"/>
+  <text x="400" y="544" text-anchor="middle" class="guard">weightMode?</text>
+  <text x="400" y="558" text-anchor="middle" class="guard">(NVS setting)</text>
+
+  <!-- Weight branch (left) -->
+  <line x1="332" y1="548" x2="190" y2="548" stroke="#3498db" stroke-width="1.5" marker-end="url(#aB)"/>
+  <text x="250" y="541" class="guard" fill="#3498db">WEIGHT</text>
+  <rect x="50" y="564" width="140" height="40" rx="10" fill="#dbeeff" stroke="#3498db" stroke-width="1.5"/>
+  <text x="120" y="589" text-anchor="middle" font-size="11" font-weight="600" fill="#1a6099">WeightDispensingStrategy</text>
+  <line x1="120" y1="604" x2="120" y2="640" stroke="#3498db" stroke-width="1.5" marker-end="url(#aB)"/>
+
+  <!-- Weight phases -->
+  <rect x="42" y="642" width="156" height="34" rx="8" fill="#f0f7ff" stroke="#3498db" stroke-width="1"/>
+  <text x="120" y="662" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3498db">Phase 1: TEA relay ON</text>
+  <text x="120" y="674" text-anchor="middle" class="note">monitor getWeight()</text>
+  <line x1="120" y1="676" x2="120" y2="696" stroke="#3498db" stroke-width="1.5" marker-end="url(#aB)"/>
+
+  <rect x="42" y="698" width="156" height="34" rx="8" fill="#f0f7ff" stroke="#3498db" stroke-width="1"/>
+  <text x="120" y="718" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3498db">Phase 2: CONDENSED MILK</text>
+  <text x="120" y="730" text-anchor="middle" class="note">until target weight</text>
+  <line x1="120" y1="732" x2="120" y2="752" stroke="#3498db" stroke-width="1.5" marker-end="url(#aB)"/>
+
+  <rect x="42" y="754" width="156" height="34" rx="8" fill="#f0f7ff" stroke="#3498db" stroke-width="1"/>
+  <text x="120" y="774" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3498db">Phase 3: EVAP. MILK</text>
+  <line x1="120" y1="788" x2="120" y2="808" stroke="#3498db" stroke-width="1.5" marker-end="url(#aB)"/>
+
+  <rect x="42" y="810" width="156" height="34" rx="8" fill="#f0f7ff" stroke="#3498db" stroke-width="1"/>
+  <text x="120" y="830" text-anchor="middle" font-size="10.5" font-weight="600" fill="#3498db">Phase 4: MILK</text>
+  <text x="120" y="842" text-anchor="middle" class="note">→ DONE</text>
+  <line x1="120" y1="844" x2="120" y2="864" stroke="#3498db" stroke-width="1.5" marker-end="url(#aB)"/>
+  <line x1="120" y1="870" x2="400" y2="870" stroke="#3498db" stroke-width="1.5"/>
+
+  <!-- Time branch (right) -->
+  <line x1="468" y1="548" x2="620" y2="548" stroke="#1abc9c" stroke-width="1.5" marker-end="url(#arrT)"/>
+  <text x="520" y="541" class="guard" fill="#1abc9c">TIME</text>
+  <rect x="610" y="564" width="150" height="40" rx="10" fill="#d5f5ef" stroke="#1abc9c" stroke-width="1.5"/>
+  <text x="685" y="589" text-anchor="middle" font-size="11" font-weight="600" fill="#0e7a5e">TimeDispensingStrategy</text>
+  <line x1="685" y1="604" x2="685" y2="640" stroke="#1abc9c" stroke-width="1.5" marker-end="url(#arrT)"/>
+
+  <!-- Time sorted schedule -->
+  <rect x="612" y="642" width="146" height="54" rx="8" fill="#ebfaf6" stroke="#1abc9c" stroke-width="1"/>
+  <text x="685" y="660" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1abc9c">Sort by duration</text>
+  <text x="685" y="674" text-anchor="middle" class="note">longest first</text>
+  <text x="685" y="686" text-anchor="middle" class="note">≤2 relays at once</text>
+  <line x1="685" y1="696" x2="685" y2="720" stroke="#1abc9c" stroke-width="1.5" marker-end="url(#arrT)"/>
+
+  <rect x="612" y="722" width="146" height="34" rx="8" fill="#ebfaf6" stroke="#1abc9c" stroke-width="1"/>
+  <text x="685" y="742" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1abc9c">Run relay pairs</text>
+  <text x="685" y="754" text-anchor="middle" class="note">500ms stagger</text>
+  <line x1="685" y1="756" x2="685" y2="780" stroke="#1abc9c" stroke-width="1.5" marker-end="url(#arrT)"/>
+
+  <rect x="612" y="782" width="146" height="34" rx="8" fill="#ebfaf6" stroke="#1abc9c" stroke-width="1"/>
+  <text x="685" y="802" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1abc9c">All relays done</text>
+  <line x1="685" y1="816" x2="685" y2="864" stroke="#1abc9c" stroke-width="1.5" marker-end="url(#arrT)"/>
+  <line x1="685" y1="870" x2="402" y2="870" stroke="#1abc9c" stroke-width="1.5"/>
+
+  <!-- ── Cup monitor (side note) ── -->
+  <rect x="280" y="580" width="140" height="44" rx="8" fill="#fff3f3" stroke="#e74c3c" stroke-width="1.2" stroke-dasharray="4,2"/>
+  <text x="350" y="598" text-anchor="middle" font-size="10" fill="#e74c3c" font-weight="600">⚠ Cup Monitor</text>
+  <text x="350" y="611" text-anchor="middle" class="note" fill="#e74c3c">every 100ms tick:</text>
+  <text x="350" y="624" text-anchor="middle" class="note" fill="#e74c3c">weight &lt; 50g → STOP!</text>
+
+  <!-- ─── Mid-dispense error ─── -->
+  <line x1="352" y1="602" x2="220" y2="720" stroke="#e74c3c" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#aR)"/>
+  <rect x="218" y="720" width="160" height="44" rx="10" fill="#ffe5e5" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="298" y="741" text-anchor="middle" font-size="11" font-weight="600" fill="#c0392b">strategy.stop()</text>
+  <text x="298" y="756" text-anchor="middle" class="note" fill="#c0392b">→ CUP_WARNING state</text>
+  <line x1="298" y1="764" x2="298" y2="800" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="298" y1="800" x2="400" y2="800" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="310" y="794" class="note" fill="#e74c3c">5s auto-dismiss</text>
+
+  <!-- Merge at y=870 -->
+  <line x1="400" y1="870" x2="400" y2="900" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── finishDispensing ─── -->
+  <rect x="268" y="902" width="264" height="40" rx="8" fill="#e8f5e9" stroke="#27ae60" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="400" y="927" text-anchor="middle" font-size="12" font-weight="600" fill="#1e7e34">relayMgr.stopAll()</text>
+  <line x1="400" y1="942" x2="400" y2="963" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── FINISHED ─── -->
+  <rect x="272" y="965" width="256" height="40" rx="20" fill="#27ae60" filter="url(#shadow)"/>
+  <text x="400" y="990" text-anchor="middle" class="activity" fill="white">FINISHED — Show Tea Ready</text>
+  <line x1="400" y1="1005" x2="400" y2="1026" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- BLE Notifications -->
+  <rect x="268" y="1028" width="264" height="44" rx="8" fill="#eaf3fb" stroke="#2980b9" stroke-width="1.5"/>
+  <text x="400" y="1048" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2980b9">BLE: sendJSON("TEA_FINISH")</text>
+  <text x="400" y="1065" text-anchor="middle" class="note" fill="#2980b9">sendJSON("TEA_PROGRESS") per tick</text>
+  <line x1="400" y1="1072" x2="400" y2="1093" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── Cup removed? ─── -->
+  <polygon points="400,1095 460,1125 400,1155 340,1125" fill="#f8f9fa" stroke="#555" stroke-width="1.8" filter="url(#shadow)"/>
+  <text x="400" y="1121" text-anchor="middle" class="guard">cup removed?</text>
+  <text x="400" y="1136" text-anchor="middle" class="guard">weight &lt; 30%</text>
+  <text x="408" y="1163" class="guard" fill="#e74c3c">no — keep waiting</text>
+  <line x1="460" y1="1125" x2="600" y2="1125" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="600" y1="1125" x2="600" y2="1000" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="600" y1="1000" x2="530" y2="1000" stroke="#e74c3c" stroke-width="1.5" marker-end="url(#aR)"/>
+
+  <line x1="400" y1="1155" x2="400" y2="1176" stroke="#27ae60" stroke-width="1.5" marker-end="url(#aG)"/>
+  <text x="344" y="1169" class="guard" fill="#27ae60">yes</text>
+
+  <!-- ─── Back to IDLE ─── -->
+  <rect x="278" y="1178" width="244" height="42" rx="21" fill="#667eea" filter="url(#shadow)"/>
+  <text x="400" y="1204" text-anchor="middle" class="activity" fill="white">IDLE — Ready for Next Cup</text>
+  <line x1="400" y1="1220" x2="400" y2="1245" stroke="#555" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- ─── End ─── -->
+  <circle cx="400" cy="1262" r="14" fill="white" stroke="#1a1a2e" stroke-width="3"/>
+  <circle cx="400" cy="1262" r="8" fill="#1a1a2e"/>
+  <text x="418" y="1267" class="note">final</text>
+
+  <!-- Arrow marker for strategy (workaround) -->
+  <defs>
+    <marker id="arrT" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#1abc9c"/></marker>
+  </defs>
+</svg>
+</div>
+</body>
+</html>
