@@ -75,7 +75,14 @@ void setup()
             else if (type == BleCommand::SET_TARGET_TOTAL_ML)
             {
                 int ml = payload["targetTotalMl"] | teaManager.getTargetTotalMl();
-                teaManager.setTargetTotalMl(ml);
+                if (ml >= 50 && ml <= 250)
+                {
+                    teaManager.setTargetTotalMl(ml);
+                }
+                else
+                {
+                    bluetoothManager.sendError("SET_TARGET_TOTAL_ML_ERROR", "Invalid target ml");
+                }
             }
             else if (type == BleCommand::START_CLEANING)
             {

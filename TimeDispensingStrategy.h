@@ -30,7 +30,11 @@ public:
     void stop() override;
 
 private:
+    // Internal phase: prime each relay before starting timed dispensing
+    enum class Phase : uint8_t { PRIMING, DISPENSING };
+
     TeaRecipe target;
+    Phase phase;
 
     // Per-relay state
     unsigned long relayStartTime[RELAY_COUNT];
@@ -48,8 +52,16 @@ private:
     uint8_t pendingRelayIdx[2];        // relays waiting to start
     unsigned long pendingActivateTime; // shared fire timestamp for the batch
 
+    // Priming state — each relay is tested for flow before timers start
+    uint8_t primingIndex;              // index into sortedOrder being primed
+    float primingStartWeight;          // weight snapshot when current relay priming began
+    unsigned long primingStartTime;    // millis() when current relay priming began
+
     float getFlowRateForIndex(uint8_t index) const;
     void activateRelay(uint8_t index, unsigned long now);
+    void setDispensedForRelay(uint8_t index, int ml, TeaRecipe &dispensed) const;
+    void startPrimingRelay();
+    void beginDispensing();
 };
 
 #endif

@@ -3,11 +3,15 @@
 namespace
 {
     // Flow rates in ml/s for each pump (relay index 0-3)
-    constexpr float FLOW_RATE_TEA_ML_PER_SEC = 5.0f;
-    constexpr float FLOW_RATE_CONDENSED_MILK_ML_PER_SEC = 5.0f;
-    constexpr float FLOW_RATE_EVAPORATED_MILK_ML_PER_SEC = 5.0f;
-    constexpr float FLOW_RATE_MILK_ML_PER_SEC = 5.0f;
+    constexpr float FLOW_RATE_TEA_ML_PER_SEC = 1.7f;
+    constexpr float FLOW_RATE_CONDENSED_MILK_ML_PER_SEC = 1.3f;
+    constexpr float FLOW_RATE_EVAPORATED_MILK_ML_PER_SEC = 1.6f;
+    constexpr float FLOW_RATE_MILK_ML_PER_SEC = 1.6f;
     constexpr unsigned long RELAY_SWITCH_DELAY_MS = 500; // gap before activating next relay
+
+    // Priming: confirm liquid flow before starting timers
+    constexpr float PRIMING_WEIGHT_THRESHOLD_G = 1.0f;
+    constexpr unsigned long PRIMING_TIMEOUT_MS = 30000;
 } // anonymous namespace
 
 // =========================================================================
@@ -42,11 +46,32 @@ void TimeDispensingStrategy::activateRelay(uint8_t index, unsigned long now)
     DEBUG_PRINTF("[TimeDispensing] Relay %d ON for %lu ms\n", index, relayDuration[index]);
 }
 
+void TimeDispensingStrategy::setDispensedForRelay(uint8_t index, int ml,
+                                                  TeaRecipe &dispensed) const
+{
+    switch (index)
+    {
+    case 0:
+        dispensed.tea = ml;
+        break;
+    case 1:
+        dispensed.condensedMilk = ml;
+        break;
+    case 2:
+        dispensed.evaporatedMilk = ml;
+        break;
+    case 3:
+        dispensed.milk = ml;
+        break;
+    }
+}
+
 // =========================================================================
 // start()
 // =========================================================================
-// Calculates durations, sorts relays longest-first, and activates the
-// first two relays immediately.
+// Calculates durations, sorts relays longest-first, then enters the
+// PRIMING phase — each relay is tested for flow (weight increase)
+// before any timed countdown begins.
 
 void TimeDispensingStrategy::start(const TeaRecipe &recipe)
 {
@@ -93,7 +118,39 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe)
         }
     }
 
-    // --- Activate first two relays (no delay for the initial pair) ---
+    // --- Enter priming phase (or skip if nothing to dispense) ---
+    if (sortedCount == 0)
+    {
+        phase = Phase::DISPENSING;
+        return;
+    }
+
+    primingIndex = 0;
+    phase = Phase::PRIMING;
+    startPrimingRelay();
+}
+
+// Activates the relay at sortedOrder[primingIndex] and records
+// the weight baseline to detect when liquid starts flowing.
+void TimeDispensingStrategy::startPrimingRelay()
+{
+    uint8_t idx = sortedOrder[primingIndex];
+    primingStartWeight = sensorMgr ? sensorMgr->getWeight() : 0.0f;
+    primingStartTime = millis();
+
+    if (relayMgr)
+    {
+        relayMgr->setRelay(idx, true);
+    }
+    DEBUG_PRINTF("[TimeDispensing] Priming relay %d (%d/%d)\n",
+                 idx, primingIndex + 1, sortedCount);
+}
+
+// Transitions from PRIMING to DISPENSING and launches the first
+// two relays with fresh timer timestamps.
+void TimeDispensingStrategy::beginDispensing()
+{
+    phase = Phase::DISPENSING;
     nextToStart = 0;
     pendingCount = 0;
     pendingActivateTime = 0;
@@ -108,6 +165,7 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe)
         nextToStart++;
         launched++;
     }
+    DEBUG_PRINTLN(F("[TimeDispensing] All relays primed — dispensing started"));
 }
 
 // =========================================================================
@@ -118,6 +176,45 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe)
 bool TimeDispensingStrategy::update(TeaRecipe &dispensed)
 {
     unsigned long now = millis();
+
+    // ===== Priming phase: wait for weight confirmation on each relay =====
+    if (phase == Phase::PRIMING)
+    {
+        if (now - primingStartTime >= PRIMING_TIMEOUT_MS)
+        {
+            DEBUG_PRINTF("[TimeDispensing] Priming TIMEOUT on relay %d\n",
+                         sortedOrder[primingIndex]);
+            stop();
+            return true;
+        }
+
+        if (sensorMgr)
+        {
+            float weight = sensorMgr->getWeight();
+            if (weight - primingStartWeight >= PRIMING_WEIGHT_THRESHOLD_G)
+            {
+                uint8_t idx = sortedOrder[primingIndex];
+                if (relayMgr)
+                {
+                    relayMgr->setRelay(idx, false);
+                }
+                DEBUG_PRINTF("[TimeDispensing] Priming relay %d confirmed\n", idx);
+
+                primingIndex++;
+                if (primingIndex < sortedCount)
+                {
+                    startPrimingRelay();
+                }
+                else
+                {
+                    beginDispensing();
+                }
+            }
+        }
+        return false;
+    }
+
+    // ===== Dispensing phase: timed relay countdown =====
     bool anyActive = false;
 
     // ===== Fire all deferred relays in the batch after 500 ms gap =====
@@ -148,23 +245,7 @@ bool TimeDispensingStrategy::update(TeaRecipe &dispensed)
             }
             relayRunning[i] = false;
 
-            // Record exact dispensed amount
-            switch (i)
-            {
-            case 0:
-                dispensed.tea = targets[0];
-                break;
-            case 1:
-                dispensed.condensedMilk = targets[1];
-                break;
-            case 2:
-                dispensed.evaporatedMilk = targets[2];
-                break;
-            case 3:
-                dispensed.milk = targets[3];
-                break;
-            }
-
+            setDispensedForRelay(i, targets[i], dispensed);
             DEBUG_PRINTF("[TimeDispensing] Relay %d OFF (completed)\n", i);
 
             // --- Enqueue next relay into the 500 ms batch (up to 2 slots) ---
@@ -172,7 +253,6 @@ bool TimeDispensingStrategy::update(TeaRecipe &dispensed)
             {
                 if (pendingCount == 0)
                 {
-                    // First entry: set the shared fire timestamp
                     pendingActivateTime = now + RELAY_SWITCH_DELAY_MS;
                 }
                 // Add to the batch (same fire time regardless of order)
@@ -187,24 +267,9 @@ bool TimeDispensingStrategy::update(TeaRecipe &dispensed)
         {
             anyActive = true;
 
-            // Proportional progress estimate
             float fraction = (float)elapsed / (float)relayDuration[i];
             int dispensedMl = (int)(targets[i] * fraction);
-            switch (i)
-            {
-            case 0:
-                dispensed.tea = dispensedMl;
-                break;
-            case 1:
-                dispensed.condensedMilk = dispensedMl;
-                break;
-            case 2:
-                dispensed.evaporatedMilk = dispensedMl;
-                break;
-            case 3:
-                dispensed.milk = dispensedMl;
-                break;
-            }
+            setDispensedForRelay(i, dispensedMl, dispensed);
         }
     }
 
@@ -234,4 +299,5 @@ void TimeDispensingStrategy::stop()
     }
     nextToStart = sortedCount; // drain the queue
     pendingCount = 0;          // cancel any pending activation
+    phase = Phase::DISPENSING; // exit priming if active
 }
