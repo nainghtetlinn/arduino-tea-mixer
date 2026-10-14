@@ -500,14 +500,14 @@ void TeaManager::exitTargetMlMode()
 
 void TeaManager::incrementTargetMl()
 {
-    constexpr int MAX_ML = 1000;
+    constexpr int MAX_ML = 250;
     targetTotalMl = min(targetTotalMl + 10, MAX_ML);
     DEBUG_PRINTF("[TeaManager] Target ML incremented to %dml\n", targetTotalMl);
 }
 
 void TeaManager::decrementTargetMl()
 {
-    constexpr int MIN_ML = 100;
+    constexpr int MIN_ML = 50;
     targetTotalMl = max(targetTotalMl - 10, MIN_ML);
     DEBUG_PRINTF("[TeaManager] Target ML decremented to %dml\n", targetTotalMl);
 }
