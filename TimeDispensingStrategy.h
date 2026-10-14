@@ -55,6 +55,7 @@ private:
     // Priming state — each relay is tested for flow before timers start
     uint8_t primingIndex;              // index into sortedOrder being primed
     float primingStartWeight;          // weight snapshot when current relay priming began
+    float primedWeight[RELAY_COUNT];   // weight already dispensed while priming each relay
     unsigned long primingStartTime;    // millis() when current relay priming began
 
     float getFlowRateForIndex(uint8_t index) const;

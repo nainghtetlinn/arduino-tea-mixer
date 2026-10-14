@@ -83,6 +83,7 @@ void TimeDispensingStrategy::start(const TeaRecipe &recipe)
     for (uint8_t i = 0; i < RELAY_COUNT; i++)
     {
         relayRunning[i] = false;
+        primedWeight[i] = 0.0f;
         if (targets[i] > 0)
         {
             float flowRate = getFlowRateForIndex(i);
@@ -194,11 +195,28 @@ bool TimeDispensingStrategy::update(TeaRecipe &dispensed)
             if (weight - primingStartWeight >= PRIMING_WEIGHT_THRESHOLD_G)
             {
                 uint8_t idx = sortedOrder[primingIndex];
+                float primedGrams = weight - primingStartWeight;
+                primedWeight[idx] = primedGrams;
+
+                // Priming has already dispensed this amount. Reduce the
+                // timed run so it is not dispensed a second time.
+                unsigned long primingDuration = (unsigned long)(
+                    (primedGrams / getFlowRateForIndex(idx)) * 1000.0f);
+                if (primingDuration >= relayDuration[idx])
+                {
+                    relayDuration[idx] = 0;
+                }
+                else
+                {
+                    relayDuration[idx] -= primingDuration;
+                }
+
                 if (relayMgr)
                 {
                     relayMgr->setRelay(idx, false);
                 }
-                DEBUG_PRINTF("[TimeDispensing] Priming relay %d confirmed\n", idx);
+                DEBUG_PRINTF("[TimeDispensing] Priming relay %d confirmed (%.2fg, %lu ms deducted)\n",
+                             idx, primedWeight[idx], primingDuration);
 
                 primingIndex++;
                 if (primingIndex < sortedCount)
