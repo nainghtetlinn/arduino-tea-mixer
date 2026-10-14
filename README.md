@@ -1,4 +1,4 @@
-# Arduino Tea Mixer
+# Tea Mixer Firmware
 
 ESP32-based firmware for an automated tea brewing and dispensing machine. The system controls ingredient pumps via relays, measures liquid volumes using a load cell or timed pumping, displays status on an I2C OLED screen, and interfaces with a companion mobile app over Bluetooth Low Energy (BLE).
 
